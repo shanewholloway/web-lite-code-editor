@@ -5,6 +5,7 @@ Lightweight code editor web component using `contentEditable=true` and
 
   [PrismJS]: https://prismjs.com
 
+
 ### Quickstart
 
 ```html
@@ -25,15 +26,39 @@ Lightweight code editor web component using `contentEditable=true` and
 </prism-code-editor>
 ```
 
-### Notes
 
-- [ ] Undo / redo with re-highlighting
+### Code start
 
-### License
+An alternative build of `esm/prism-editor.mjs` ::
 
-[BSD-2-Clause](./LICENSE)
+```javascript
+import Prism from 'prismjs'
+import {bindCodeEditor} from 'lite-code-editor/esm/editor.mjs'
 
-Inspired by [CodeFlask][] and [CodeJar][]
+const PrismCodeEditor = bindCodeEditor(Prism.highlightElement)
+
+customElements.define('prism-code-editor', PrismCodeEditor)
+```
+
+
+## Thanks!
+
+Special thanks to [Sam Thorogood][samthor] for creating [Undoer][] and
+the [excellent writeup][undoer-article] unpacking the approach to implementing undo/redo with the browser's
+assistance.
+
+ [Undoer]: https://github.com/samthor/undoer
+ [samthor]: https://github.com/samthor
+ [undoer-article]: https://dev.to/chromiumdev/-native-undo--redo-for-the-web-3fl3
+
+
+Lightweight code editor inspired by similar [CodeFlask][] and [CodeJar][] projects.
 
  [CodeFlask]: https://kazzkiq.github.io/CodeFlask/
  [CodeJar]: https://medv.io/codejar/
+
+
+## License
+
+[BSD-2-Clause](./LICENSE)
+

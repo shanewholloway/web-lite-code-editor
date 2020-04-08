@@ -1,23 +1,23 @@
-import {init_dom_editor} from './dom.jsy'
-import {_create_async_queue} from './_refresh.jsy'
-
+import {code_editor_dom} from './dom.jsy'
 
 export default bindCodeEditor
 export function bindCodeEditor(fn_src_highlight, opt = {}) ::
   opt = @{} ... opt || {}
-  const _q_async = _create_async_queue()
 
   class CodeEditor extends HTMLElement ::
     connectedCallback() ::
-      let src_code = this.textContent
-        .replace(/^(\s*\r?\n)+/, '')
-        .trimEnd()
+      const src_code = this.textContent
+        .replace(/^\s*\r?\n/, '')
 
       this.textContent = ''
 
       const el = this._el_code = this._init_dom(this.ownerDocument)
-      init_dom_editor(this, el, src_code, opt)
+      this._disconnect = code_editor_dom(this, el, src_code, opt)
       this.src_code = src_code
+
+    disconnectedCallback() ::
+      if this._disconnect ::
+        this._disconnect()
 
     _init_dom(odoc) ::
       const el_code = odoc.createElement('code')
@@ -32,14 +32,15 @@ export function bindCodeEditor(fn_src_highlight, opt = {}) ::
     attributeChangedCallback() ::
       this.dirty()
 
-    dirty() :: _q_async @ this.refresh
+    dirty() ::
+    refresh() ::
 
     get lang() :: return this.getAttribute('lang')
     set lang(lang) :: this.setAttribute('lang', lang)
 
-    get src_code() ::
+    get raw_src_code() ::
       return this._el_code.textContent
-    set src_code(src_code) ::
+    set raw_src_code(src_code) ::
       const {_el_code: el, lang} = this
       el.innerHTML = ''
       el.textContent = src_code
@@ -49,8 +50,13 @@ export function bindCodeEditor(fn_src_highlight, opt = {}) ::
         el.className = cls_lang || ''
         el.parentNode.className = cls_lang || ''
 
-      _q_async @ this._emit_src_code
-      fn_src_highlight(el)
+      this._emit_src_code(src_code, this)
+
+    get src_code() ::
+      return this._el_code.textContent
+    set src_code(src_code) ::
+      this.raw_src_code = src_code
+      fn_src_highlight(this._el_code)
 
 
   return CodeEditor

@@ -1,4 +1,5 @@
 import rpi_jsy from 'rollup-plugin-jsy'
+import rpi_resolve from '@rollup/plugin-node-resolve'
 import { terser as rpi_terser } from 'rollup-plugin-terser'
 
 const configs = []
@@ -6,7 +7,7 @@ export default configs
 
 const sourcemap = true
 const external = k => k.startsWith('https://')
-const plugins = [rpi_jsy()]
+const plugins = [rpi_jsy(), rpi_resolve()]
 const plugins_web = [ ... plugins, rpi_terser({}) ]
 
 

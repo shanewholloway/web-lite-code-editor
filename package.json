@@ -1,6 +1,6 @@
 {
   "name": "lite-code-editor",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Lightweight web code editor (contentEditable)",
   "license": "BSD-2-Clause",
   "author": "Shane Holloway <shane.holloway@ieee.org>",
@@ -25,9 +25,11 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@rollup/plugin-node-resolve": "^7.1.1",
     "rollup": "^2.3.3",
     "rollup-plugin-jsy": "^1.6.3",
-    "rollup-plugin-terser": "^5.3.0"
+    "rollup-plugin-terser": "^5.3.0",
+    "undoer": "^0.1.1"
   },
   "scripts": {
     "clean": "rm -rf ./cjs/* ./esm/* ./umd/*",

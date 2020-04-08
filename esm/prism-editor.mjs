@@ -68,58 +68,6 @@ function from_range_relative_offset(el_root, offset) {
       // drill down into first child
       tip = tip.childNodes[0];} } }
 
-const _ed_attrs ={
-  contentEditable: true
-, spellcheck: false};
-
-const _ed_style ={
-  outline: 'none'
-, overflowWrap: 'break-word'
-, overflowY: 'auto'
-, resize: 'vertical'
-, whiteSpace: 'pre-wrap'};
-
-function init_dom_editor(host, el, src_code0, opt) {
-  const attrs = {... _ed_attrs, ... opt.attrs || {}}; 
-  for (const k in attrs) {
-    el.setAttribute(k, attrs[k]);}
-
-  Object.assign(el.style,
-    {... _ed_style, ... opt.style || {}});
-
-
-  const ktbl ={
-    'evt keydown Tab'(evt) {
-      evt.preventDefault();
-      document.execCommand('insertText', false, opt.tabs || '    '); } };
-
-  function ktbl_evt(evt) {
-    const fn = ktbl[`evt ${evt.type} ${evt.key}`];
-    if (fn) {fn(evt, host);} }
-
-  el.addEventListener('keydown', ktbl_evt);
-  el.addEventListener('keyup', ktbl_evt);
-  el.addEventListener('input', (() => {host.dirty();}));
-
-  el.addEventListener('paste', (( evt ) => {
-    evt.preventDefault();
-    const text = evt.clipboardData.getData('text/plain');
-    document.execCommand('insertText', false, text);
-    host.dirty();}) );
-
-
-  host.refresh = (() => {
-    for (const _ of relative_selection_ctxmgr(el)) {
-      host.src_code = host.src_code + '';} });
-
-  host._emit_src_code = (() => {
-    const {src_code} = host;
-    if (src_code != src_code0) {
-      src_code0 = src_code;
-      host.dispatchEvent(
-        new CustomEvent('src_code', 
-          {detail: src_code} ) ); } }); }
-
 function _create_async_queue() {
   let _x, _q=new Set();
   return enqueue
@@ -139,21 +87,234 @@ function _create_async_queue() {
     _x = undefined;
     enqueue();} }
 
+class Undoer {
+
+  /**
+   * @template T
+   * @param {function(T)} callback to call when undo/redo occurs
+   * @param {T=} zero the zero state for undoing everything
+   */
+  constructor(callback, zero=null) {
+    this._duringUpdate = false;
+    this._stack = [zero];
+ 
+    // nb. Previous versions of this used `input` for browsers other than Firefox (as Firefox
+    // _only_ supports execCommand on contentEditable)
+    this._ctrl = document.createElement('div');
+    this._ctrl.setAttribute('aria-hidden', 'true');
+    this._ctrl.style.opacity = 0;
+    this._ctrl.style.position = 'fixed';
+    this._ctrl.style.top = '-1000px';
+    this._ctrl.style.pointerEvents = 'none';
+    this._ctrl.tabIndex = -1;
+
+    this._ctrl.contentEditable = true;
+    this._ctrl.textContent = '0';
+    this._ctrl.style.visibility = 'hidden';  // hide element while not used
+
+    this._ctrl.addEventListener('focus', (ev) => {
+      // Safari needs us to wait, can't blur immediately.
+      window.setTimeout(() => void this._ctrl.blur(), 0);
+    });
+    this._ctrl.addEventListener('input', (ev) => {
+      if (!this._duringUpdate) {
+        callback(this.data);
+      }
+
+      // clear selection, otherwise user copy gesture will copy value
+      // nb. this _probably_ won't work inside Shadow DOM
+      // nb. this is mitigated by the fact that we set visibility: 'hidden'
+      const s = window.getSelection();
+      if (s.containsNode(this._ctrl, true)) {
+        s.removeAllRanges();
+      }
+    });
+  }
+
+  /**
+   * @return {number} the current stack value
+   */
+  get _depth() {
+    return +(this._ctrl.textContent) || 0;
+  }
+
+  /**
+   * @return {T} the current data
+   * @export
+   */
+  get data() {
+    return this._stack[this._depth];
+  }
+
+  /**
+   * Pushes a new undoable event. Adds to the browser's native undo/redo stack.
+   *
+   * @param {T} data the data for this undo event
+   * @param {!Node=} parent to add to, uses document.body by default
+   * @export
+   */
+  push(data, parent) {
+    // nb. We can't remove this later: the only case we could is if the user undoes everything
+    // and then does some _other_ action (which we can't detect).
+    if (!this._ctrl.parentNode) {
+      // nb. we check parentNode as this would remove contentEditable's history
+      (parent || document.body).appendChild(this._ctrl);
+    }
+
+    const nextID = this._depth + 1;
+    this._stack.splice(nextID, this._stack.length - nextID, data);
+
+    const previousFocus = document.activeElement;
+    try {
+      this._duringUpdate = true;
+      this._ctrl.style.visibility = null;
+      this._ctrl.focus();
+      document.execCommand('selectAll');
+      document.execCommand('insertText', false, nextID);
+    } finally {
+      this._duringUpdate = false;
+      this._ctrl.style.visibility = 'hidden';
+    }
+
+    previousFocus && previousFocus.focus();
+  }
+}
+
+function code_editor_dom(host, el_code, src_code0, opt) {
+  _init_code_dom(el_code, opt);
+  _init_editor_api(host, el_code, src_code0);
+
+  const events = opt.events || code_editor_events;
+  const _on_evt = bind_evt_dispatch(events, host, opt);
+  for (const key of events.keys) {
+    el_code.addEventListener(key, _on_evt); }
+
+  return (() => {
+    for (const key of events.keys) {
+      el_code.removeEventListener(key, _on_evt); } }) }
+
+
+
+const code_editor_events = Object.freeze({
+  keys: Object.freeze(['keydown', 'keyup', 'paste', 'input'])
+, attrs: Object.freeze(['key'])
+, table: Object.freeze({
+    'evt:keydown,key:Tab'(evt, host, opt) {
+      evt.preventDefault();
+      document.execCommand('insertText', false, opt.tabs || '    '); }
+
+  , 'evt:paste'(evt, host) {
+      evt.preventDefault();
+      const text = evt.clipboardData.getData('text/plain');
+      if (text) {
+        document.execCommand('insertText', false, text);
+        host.dirty();} }
+
+  , 'evt:input': bind_evt_editor_input()}) });
+
+function bind_evt_dispatch(events, ... ex_args) {
+  const {table, attrs} = events;
+  return (( evt ) => {
+    const evec =[`evt:${evt.type}`, ...(
+      attrs
+        .map(k => `${k}:${evt[k]}`)
+        .filter(Boolean) ) ];
+
+    for (let i=evec.length; i>0; i--) {
+      const fn = table[evec.slice(0,i)];
+      if (fn) {
+        return fn(evt, ... ex_args)} } }) }
+
+function bind_evt_editor_input() {
+  // specialized input event to work in concert with Undoer
+  const wset = new WeakSet();
+  return (( evt, host ) => {
+    if (wset.has(host)) {
+      return}
+
+    wset.add(host);
+    try {
+      const src_code = host.src_code;
+      for (const _ of host.with_selection()) {
+        document.execCommand('undo', false);
+        host.raw_src_code = src_code;
+        host.dirty();} }
+    finally {
+      wset.delete(host);} }) }
+
+
+
+function _init_editor_api(host, el_code, src_code0) {
+  let _undoer = new Undoer(_do_undo, src_code0);
+  function _do_undo(prev_src_code) {
+    const save = _undoer;
+    _undoer = null;
+    try {host.src_code = prev_src_code;}
+    finally {_undoer = save;} }
+
+
+  const q_async = _create_async_queue();
+  return Object.assign(host,{
+    *with_selection() {
+      for (const _ of relative_selection_ctxmgr(el_code)) {
+        yield;} }
+
+  , dirty() {
+      q_async(host.refresh); }
+
+  , refresh() {
+      for (const _ of host.with_selection()) {
+        host.src_code = host.src_code + '';} }
+
+  , _emit_src_code(src_code, el) {
+      if (src_code == src_code0) {
+        return}
+
+      src_code0 = src_code;
+      if (null !== _undoer) {
+        _undoer.push(src_code, el); }
+(el || el_code).dispatchEvent(
+        new CustomEvent('src_code', 
+          {detail: src_code} ) ); } } ) }
+
+
+
+const _ed_attrs ={
+  contentEditable: true
+, spellcheck: false};
+
+const _ed_style ={
+  outline: 'none'
+, overflowWrap: 'break-word'
+, overflowY: 'auto'
+, resize: 'vertical'
+, whiteSpace: 'pre-wrap'};
+
+function _init_code_dom(el_code, opt) {
+  const attrs = {... _ed_attrs, ... opt.attrs || {}}; 
+  for (const k in attrs) {
+    el_code.setAttribute(k, attrs[k]);}
+
+  Object.assign(el_code.style,
+    {... _ed_style, ... opt.style || {}}); }
+
 function bindCodeEditor(fn_src_highlight, opt = {}) {
   opt ={... opt || {}};
-  const _q_async = _create_async_queue();
 
   class CodeEditor extends HTMLElement {
     connectedCallback() {
-      let src_code = this.textContent
-        .replace(/^(\s*\r?\n)+/, '')
-        .trimEnd();
+      const src_code = this.textContent
+        .replace(/^\s*\r?\n/, '');
 
       this.textContent = '';
 
       const el = this._el_code = this._init_dom(this.ownerDocument);
-      init_dom_editor(this, el, src_code, opt);
+      this._disconnect = code_editor_dom(this, el, src_code, opt);
       this.src_code = src_code;}
+
+    disconnectedCallback() {
+      if (this._disconnect) {
+        this._disconnect();} }
 
     _init_dom(odoc) {
       const el_code = odoc.createElement('code');
@@ -168,14 +329,15 @@ function bindCodeEditor(fn_src_highlight, opt = {}) {
     attributeChangedCallback() {
       this.dirty();}
 
-    dirty() {_q_async(this.refresh);}
+    dirty() {}
+    refresh() {}
 
     get lang() {return this.getAttribute('lang')}
     set lang(lang) {this.setAttribute('lang', lang);}
 
-    get src_code() {
+    get raw_src_code() {
       return this._el_code.textContent}
-    set src_code(src_code) {
+    set raw_src_code(src_code) {
       const {_el_code: el, lang} = this;
       el.innerHTML = '';
       el.textContent = src_code;
@@ -185,8 +347,13 @@ function bindCodeEditor(fn_src_highlight, opt = {}) {
         el.className = cls_lang || '';
         el.parentNode.className = cls_lang || '';}
 
-      _q_async(this._emit_src_code);
-      fn_src_highlight(el);} }
+      this._emit_src_code(src_code, this);}
+
+    get src_code() {
+      return this._el_code.textContent}
+    set src_code(src_code) {
+      this.raw_src_code = src_code;
+      fn_src_highlight(this._el_code);} }
 
 
   return CodeEditor}
