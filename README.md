@@ -6,6 +6,10 @@ Lightweight code editor web component using `contentEditable=true` and
   [PrismJS]: https://prismjs.com
 
 
+## Demo
+
+Github.io hosted [lite-code-editor demo](https://shanewholloway.github.io/web-lite-code-editor/)
+
 ### Quickstart
 
 ```html
