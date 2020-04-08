@@ -1,0 +1,20 @@
+
+export function _create_async_queue() ::
+  let _x, _q=new Set()
+  return enqueue
+
+  function enqueue(fn) ::
+    if fn :: _q.add(fn)
+    if undefined === _x && 0 !== _q.size ::
+      _x = requestAnimationFrame @ _q_step
+
+  async function _q_step() ::
+    const q_snap = _q
+    _q = new Set()
+
+    for const fn of q_snap ::
+      await fn()
+
+    _x = undefined
+    enqueue()
+

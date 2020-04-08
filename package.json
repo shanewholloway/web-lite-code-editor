@@ -1,0 +1,39 @@
+{
+  "name": "lite-code-editor",
+  "version": "0.0.1",
+  "description": "Lightweight web code editor (contentEditable)",
+  "license": "BSD-2-Clause",
+  "author": "Shane Holloway <shane.holloway@ieee.org>",
+  "homepage": "https://github.com/shanewholloway/web-lite-code-editor#readme",
+  "bugs": {
+    "url": "https://github.com/shanewholloway/web-lite-code-editor/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/shanewholloway/web-lite-code-editor.git"
+  },
+  "files": [
+    "code/",
+    "esm/"
+  ],
+  "type": "module",
+  "module": "./esm/all.mjs",
+  "browser": "./esm/index.min.mjs",
+  "exports": {
+    "./": "./",
+    ".": "./esm/all.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "rollup": "^2.3.3",
+    "rollup-plugin-jsy": "^1.6.3",
+    "rollup-plugin-terser": "^5.3.0"
+  },
+  "scripts": {
+    "clean": "rm -rf ./cjs/* ./esm/* ./umd/*",
+    "build": "rollup --config",
+    "watch": "npm -s run build -- --watch",
+    "pretest": "npm -s run build",
+    "test": "true"
+  }
+}

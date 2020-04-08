@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='utf-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <title>Prism Lite-Code-Editor</title>
+
+  <link rel='icon' href='data:image/png;base64,' />
+  <style>
+    body {
+      max-width: 60em;
+      margin: 2em auto;
+    }
+  </style>
+
+  <link href='https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css' rel='stylesheet' />
+  <script src='https://cdn.jsdelivr.net/npm/prismjs/components/prism-core.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/prismjs/plugins/autoloader/prism-autoloader.min.js'></script>
+
+  <!--script type=module src='https://cdn.jsdelivr.net/npm/lite-code-editor/esm/prism-editor.mjs'></script-->
+  <script type=module src='./esm/prism-editor.mjs'></script>
+</head>
+
+<prism-code-editor lang='js'>
+  if (true != false) {
+    console.log(
+      'A log message',
+      { ts: new Date,
+        meta: import.meta }
+    )
+  }
+</prism-code-editor>
+

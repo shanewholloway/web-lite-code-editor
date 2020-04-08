@@ -1,0 +1,5 @@
+import {bindCodeEditor} from './editor.jsy'
+
+export const PrismCodeEditor = bindCodeEditor(Prism.highlightElement)
+customElements.define @ 'prism-code-editor', PrismCodeEditor
+

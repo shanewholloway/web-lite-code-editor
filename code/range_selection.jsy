@@ -1,0 +1,74 @@
+
+export function * relative_selection_ctxmgr(el) ::
+  const sel = el.ownerDocument.getSelection()
+  const sel_rng = 1===sel.rangeCount && sel.getRangeAt(0)
+
+  const rel_rng = as_range_relative(el, sel_rng)
+  if rel_rng ::
+    yield rel_rng
+
+    const rng = from_range_relative(el, rel_rng)
+    if rng ::
+      sel.removeAllRanges()
+      sel.addRange(rng)
+
+
+export function as_range_relative(el, rng) ::
+  if ! rng || ! rng.intersectsNode(el) :: return
+
+  const r_el = el.ownerDocument.createRange()
+  r_el.selectNode(el)
+
+  if -1 === rng.compareBoundaryPoints(Range.START_TO_START, r_el) ::
+    return
+  if  1 === rng.compareBoundaryPoints(Range.END_TO_END, r_el) ::
+    return
+
+  return @{}
+    start: as_range_relative_offset @ el, rng.startContainer, rng.startOffset
+    end: as_range_relative_offset @ el, rng.endContainer, rng.endOffset
+
+
+export function from_range_relative(el, rel_rng) ::
+  const start = from_range_relative_offset(el, rel_rng.start)
+  const end = from_range_relative_offset(el, rel_rng.end)
+
+  if start && end ::
+    const rng = el.ownerDocument.createRange()
+    rng.setStart(start[0], start[1])
+    rng.setEnd(end[0], end[1])
+    return rng
+
+
+const _indexOf = [].indexOf
+export function as_range_relative_offset(el_root, el, offset) ::
+  while el !== el_root ::
+    const tip = el
+    el = el.parentNode
+    for const node of el.childNodes ::
+      if node !== tip ::
+        offset += node.textContent.length
+      else break
+  return offset
+
+
+export function from_range_relative_offset(el_root, offset) ::
+  if offset > el_root.textContent.length ::
+    return
+
+  let tip = el_root.childNodes[0]
+  while tip ::
+    const n = tip.textContent.length
+    if n < offset ::
+      // consume leading textContent length
+      offset -= n
+      tip = tip.nextSibling
+
+    else if 3 === tip.nodeType ::
+      // TEXT_NODE with more content than our offset
+      return [tip, offset]
+
+    else ::
+      // drill down into first child
+      tip = tip.childNodes[0]
+

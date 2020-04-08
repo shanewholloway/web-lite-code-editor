@@ -1,0 +1,54 @@
+import {relative_selection_ctxmgr} from './range_selection.jsy'
+
+const _ed_attrs = @{}
+  contentEditable: true
+  spellcheck: false
+
+const _ed_style = @{}
+  outline: 'none'
+  overflowWrap: 'break-word'
+  overflowY: 'auto'
+  resize: 'vertical'
+  whiteSpace: 'pre-wrap'
+
+export function init_dom_editor(host, el, src_code0, opt) ::
+  const attrs = {... _ed_attrs, ... opt.attrs || {}} 
+  for const k in attrs ::
+    el.setAttribute(k, attrs[k])
+
+  Object.assign @ el.style,
+    {... _ed_style, ... opt.style || {}}
+
+
+  const ktbl = @{}
+    'evt keydown Tab'(evt) ::
+      evt.preventDefault()
+      document.execCommand @ 'insertText', false, opt.tabs || '    '
+
+  function ktbl_evt(evt) ::
+    const fn = ktbl[`evt ${evt.type} ${evt.key}`]
+    if fn :: fn(evt, host)
+
+  el.addEventListener @ 'keydown', ktbl_evt
+  el.addEventListener @ 'keyup', ktbl_evt
+  el.addEventListener @ 'input', @:: host.dirty()
+
+  el.addEventListener @ 'paste', @\ evt ::
+    evt.preventDefault()
+    const text = evt.clipboardData.getData('text/plain')
+    document.execCommand('insertText', false, text)
+    host.dirty()
+
+
+  host.refresh = @::
+    for const _ of relative_selection_ctxmgr(el) ::
+      host.src_code = host.src_code + ''
+
+  host._emit_src_code = @::
+    const {src_code} = host
+    if src_code != src_code0 ::
+      src_code0 = src_code
+      host.dispatchEvent @
+        new CustomEvent @ 'src_code', 
+          @{} detail: src_code
+
