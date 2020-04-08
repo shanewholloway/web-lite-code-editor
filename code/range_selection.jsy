@@ -4,13 +4,12 @@ export function * relative_selection_ctxmgr(el) ::
   const sel_rng = 1===sel.rangeCount && sel.getRangeAt(0)
 
   const rel_rng = as_range_relative(el, sel_rng)
-  if rel_rng ::
-    yield rel_rng
+  yield rel_rng
 
-    const rng = from_range_relative(el, rel_rng)
-    if rng ::
-      sel.removeAllRanges()
-      sel.addRange(rng)
+  const rng = from_range_relative(el, rel_rng)
+  if rng ::
+    sel.removeAllRanges()
+    sel.addRange(rng)
 
 
 export function as_range_relative(el, rng) ::
@@ -30,6 +29,7 @@ export function as_range_relative(el, rng) ::
 
 
 export function from_range_relative(el, rel_rng) ::
+  if ! rel_rng :: return
   const start = from_range_relative_offset(el, rel_rng.start)
   const end = from_range_relative_offset(el, rel_rng.end)
 

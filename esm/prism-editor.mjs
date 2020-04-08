@@ -3,13 +3,12 @@ function * relative_selection_ctxmgr(el) {
   const sel_rng = 1===sel.rangeCount && sel.getRangeAt(0);
 
   const rel_rng = as_range_relative(el, sel_rng);
-  if (rel_rng) {
-    yield rel_rng;
+  yield rel_rng;
 
-    const rng = from_range_relative(el, rel_rng);
-    if (rng) {
-      sel.removeAllRanges();
-      sel.addRange(rng);} } }
+  const rng = from_range_relative(el, rel_rng);
+  if (rng) {
+    sel.removeAllRanges();
+    sel.addRange(rng);} }
 
 
 function as_range_relative(el, rng) {
@@ -29,6 +28,7 @@ function as_range_relative(el, rng) {
 
 
 function from_range_relative(el, rel_rng) {
+  if (! rel_rng) {return}
   const start = from_range_relative_offset(el, rel_rng.start);
   const end = from_range_relative_offset(el, rel_rng.end);
 
@@ -155,7 +155,6 @@ function bindCodeEditor(fn_src_highlight, opt = {}) {
       init_dom_editor(this, el, src_code, opt);
       this.src_code = src_code;}
 
-
     _init_dom(odoc) {
       const el_code = odoc.createElement('code');
       const el_pre = odoc.createElement('pre');
@@ -164,12 +163,15 @@ function bindCodeEditor(fn_src_highlight, opt = {}) {
       return el_code}
 
 
-    get lang() {
-      return this.getAttribute('lang')}
-    set lang(lang) {
-      this.setAttribute('lang', lang);
+    static get observedAttributes() {
+      return ['lang'] }
+    attributeChangedCallback() {
       this.dirty();}
 
+    dirty() {_q_async(this.refresh);}
+
+    get lang() {return this.getAttribute('lang')}
+    set lang(lang) {this.setAttribute('lang', lang);}
 
     get src_code() {
       return this._el_code.textContent}
@@ -184,9 +186,8 @@ function bindCodeEditor(fn_src_highlight, opt = {}) {
         el.parentNode.className = cls_lang || '';}
 
       _q_async(this._emit_src_code);
-      fn_src_highlight(el);}
+      fn_src_highlight(el);} }
 
-    dirty() {_q_async(this.refresh);} }
 
   return CodeEditor}
 

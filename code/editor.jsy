@@ -19,7 +19,6 @@ export function bindCodeEditor(fn_src_highlight, opt = {}) ::
       init_dom_editor(this, el, src_code, opt)
       this.src_code = src_code
 
-
     _init_dom(odoc) ::
       const el_code = odoc.createElement('code')
       const el_pre = odoc.createElement('pre')
@@ -28,12 +27,15 @@ export function bindCodeEditor(fn_src_highlight, opt = {}) ::
       return el_code
 
 
-    get lang() ::
-      return this.getAttribute('lang')
-    set lang(lang) ::
-      this.setAttribute('lang', lang)
+    static get observedAttributes() ::
+      return @[] 'lang'
+    attributeChangedCallback() ::
       this.dirty()
 
+    dirty() :: _q_async @ this.refresh
+
+    get lang() :: return this.getAttribute('lang')
+    set lang(lang) :: this.setAttribute('lang', lang)
 
     get src_code() ::
       return this._el_code.textContent
@@ -50,7 +52,6 @@ export function bindCodeEditor(fn_src_highlight, opt = {}) ::
       _q_async @ this._emit_src_code
       fn_src_highlight(el)
 
-    dirty() :: _q_async @ this.refresh
 
   return CodeEditor
 
