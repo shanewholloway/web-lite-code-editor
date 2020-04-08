@@ -180,9 +180,9 @@ class Undoer {
   }
 }
 
-function code_editor_dom(host, el_code, src_code0, opt) {
+function code_editor_dom(host, el_code, state0, opt) {
   _init_code_dom(el_code, opt);
-  _init_editor_api(host, el_code, src_code0);
+  _init_editor_api(host, el_code, state0);
 
   const events = opt.events || code_editor_events;
   const _on_evt = bind_evt_dispatch(events, host, opt);
@@ -244,12 +244,12 @@ function bind_evt_editor_input() {
 
 
 
-function _init_editor_api(host, el_code, src_code0) {
-  let _undoer = new Undoer(_do_undo, src_code0);
-  function _do_undo(prev_src_code) {
+function _init_editor_api(host, el_code, state_tip) {
+  let _undoer = new Undoer(_do_undo, state_tip);
+  function _do_undo(prev_state) {
     const save = _undoer;
     _undoer = null;
-    try {host.src_code = prev_src_code;}
+    try {host.restoreState(prev_state);}
     finally {_undoer = save;} }
 
 
@@ -266,17 +266,25 @@ function _init_editor_api(host, el_code, src_code0) {
       for (const _ of host.with_selection()) {
         host.src_code = host.src_code + '';} }
 
-  , _emit_src_code(src_code, el) {
-      if (src_code == src_code0) {
+  , _emit_src_code(el, new_state, shape=['lang', 'src_code']) {
+      if (_state_equal(new_state, state_tip, shape)) {
         return}
 
-      src_code0 = src_code;
+      state_tip = new_state;
       if (null !== _undoer) {
-        _undoer.push(src_code, el); }
-(el || el_code).dispatchEvent(
-        new CustomEvent('src_code', 
-          {detail: src_code} ) ); } } ) }
+        _undoer.push(new_state, el); }
 
+      const evt = new CustomEvent('src_code',{
+        bubbles: true, detail: new_state} )
+
+      ;(el || el_code).dispatchEvent(evt);} } ) }
+
+
+function _state_equal(a,b, shape) {
+  for (const k of shape) {
+    if (a[k] !== b[k]) {
+      return false} }
+  return true}
 
 
 const _ed_attrs ={
@@ -305,11 +313,11 @@ function bindCodeEditor(fn_src_highlight, opt = {}) {
     connectedCallback() {
       const src_code = this.textContent
         .replace(/^\s*\r?\n/, '');
-
       this.textContent = '';
+      const state0 ={src_code, lang: this.lang};
 
       const el = this._el_code = this._init_dom(this.ownerDocument);
-      this._disconnect = code_editor_dom(this, el, src_code, opt);
+      this._disconnect = code_editor_dom(this, el, state0, opt);
       this.src_code = src_code;}
 
     disconnectedCallback() {
@@ -347,14 +355,17 @@ function bindCodeEditor(fn_src_highlight, opt = {}) {
         el.className = cls_lang || '';
         el.parentNode.className = cls_lang || '';}
 
-      this._emit_src_code(src_code, this);}
+      this._emit_src_code(this, {src_code, lang}); }
 
     get src_code() {
       return this._el_code.textContent}
     set src_code(src_code) {
       this.raw_src_code = src_code;
-      fn_src_highlight(this._el_code);} }
+      fn_src_highlight(this._el_code);}
 
+    restoreState({lang, src_code}) {
+      this.lang = lang;
+      this.src_code = src_code;} }
 
   return CodeEditor}
 

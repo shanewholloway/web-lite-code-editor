@@ -8,11 +8,11 @@ export function bindCodeEditor(fn_src_highlight, opt = {}) ::
     connectedCallback() ::
       const src_code = this.textContent
         .replace(/^\s*\r?\n/, '')
-
       this.textContent = ''
+      const state0 = @{} src_code, lang: this.lang
 
       const el = this._el_code = this._init_dom(this.ownerDocument)
-      this._disconnect = code_editor_dom(this, el, src_code, opt)
+      this._disconnect = code_editor_dom(this, el, state0, opt)
       this.src_code = src_code
 
     disconnectedCallback() ::
@@ -50,7 +50,7 @@ export function bindCodeEditor(fn_src_highlight, opt = {}) ::
         el.className = cls_lang || ''
         el.parentNode.className = cls_lang || ''
 
-      this._emit_src_code(src_code, this)
+      this._emit_src_code @ this, {src_code, lang}
 
     get src_code() ::
       return this._el_code.textContent
@@ -58,6 +58,9 @@ export function bindCodeEditor(fn_src_highlight, opt = {}) ::
       this.raw_src_code = src_code
       fn_src_highlight(this._el_code)
 
+    restoreState({lang, src_code}) ::
+      this.lang = lang
+      this.src_code = src_code
 
   return CodeEditor
 
