@@ -53,8 +53,14 @@
 
 <h2><a href='https://python.org/'>Python</a>:</h2>
 <prism-code-editor lang='python'>
-  if True is not False :
-    print('hello')
+    def fib(n):
+        a, b = 0, 1
+        while a < n:
+            print(a, end=' ')
+            a, b = b, a+b
+        print()
+
+    fib(1000)
 </prism-code-editor>
 
 
