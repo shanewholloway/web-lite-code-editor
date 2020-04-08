@@ -15,12 +15,21 @@
 
   <link href='https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css' rel='stylesheet' />
   <script src='https://cdn.jsdelivr.net/npm/prismjs/prism.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/prismjs/plugins/autoloader/prism-autoloader.min.js'></script>
 	<script src='https://cdn.jsdelivr.net/npm/prism-jsy/iife/prism-jsy-syntax.js'></script>
 
   <!--script type=module src='https://cdn.jsdelivr.net/npm/lite-code-editor/esm/prism-editor.mjs'></script-->
   <script type=module src='./esm/prism-editor.mjs'></script>
 </head>
 
+<h1>Lite-Code-Editor</h1>
+<ul>
+  <li><a href='https://shanewholloway.github.io/web-lite-code-editor/'>in this demo</a></li>
+  <li><a href='https://github.com/shanewholloway/web-lite-code-editor/'>on github</a></li>
+  <li><a href='https://www.npmjs.com/package/lite-code-editor'>on npm</a></li>
+</ul>
+
+<h2>Javascript:</h2>
 <prism-code-editor lang='js'>
   if (true != false) {
     console.log(
@@ -31,3 +40,50 @@
   }
 </prism-code-editor>
 
+
+<h2><a href='https://jsy-lang.github.io/'>JSY</a>:</h2>
+<prism-code-editor lang='jsy'>
+  if true != false ::
+    console.log @
+      'A log message',
+      @{} ts: new Date,
+          meta: import.meta
+</prism-code-editor>
+
+
+<h2><a href='https://python.org/'>Python</a>:</h2>
+<prism-code-editor lang='python'>
+  if True is not False :
+    print('hello')
+</prism-code-editor>
+
+
+<h2><a href='https://www.rust-lang.org/'>Rust</a>:</h2>
+<prism-code-editor lang='rust'>
+  fn main() {
+      println!("Hello World!");
+  }
+</prism-code-editor>
+
+
+<h2><a href='https://nim-lang.org/'>Nim</a>:</h2>
+<prism-code-editor lang='nim'>
+  iterator oddNumbers[Idx, T](a: array[Idx, T]): T =
+    for x in a:
+      if x mod 2 == 1:
+        yield x
+
+  for odd in oddNumbers([3, 6, 9, 12, 15, 18]):
+    echo odd
+</prism-code-editor>
+
+<h2><a href='https://golang.org/'>Go</a>:</h2>
+<prism-code-editor lang='nim'>
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello, 世界")
+}
+</prism-code-editor>
