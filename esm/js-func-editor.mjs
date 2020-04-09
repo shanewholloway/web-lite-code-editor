@@ -196,10 +196,12 @@ function code_editor_dom(host, el_code, state0, opt) {
 
 
 const code_editor_events = Object.freeze({
-  keys: Object.freeze(['keydown', 'keyup', 'paste', 'input'])
+  keys: Object.freeze(['keydown', 'keyup', 'paste', 'input', 'blur'])
 , attrs: Object.freeze(['key'])
 , table: Object.freeze({
-    'evt:keydown,key:Tab'(evt, host, opt) {
+    ... bind_evt_editor_input()
+
+  , 'evt:keydown,key:Tab'(evt, host, opt) {
       evt.preventDefault();
       document.execCommand('insertText', false, opt.tabs || '    '); }
 
@@ -208,9 +210,7 @@ const code_editor_events = Object.freeze({
       const text = evt.clipboardData.getData('text/plain');
       if (text) {
         document.execCommand('insertText', false, text);
-        host.dirty();} }
-
-  , 'evt:input': bind_evt_editor_input()}) });
+        host.dirty();} } }) });
 
 function bind_evt_dispatch(events, ... ex_args) {
   const {table, attrs} = events;
@@ -228,20 +228,28 @@ function bind_evt_dispatch(events, ... ex_args) {
 function bind_evt_editor_input() {
   // specialized input event to work in concert with Undoer
   const wset = new WeakSet();
-  return (async ( evt, host ) => {
-    if (wset.has(host)) {
-      return}
+  return {
+    'evt:blur'(evt, host) {
+      if (wset.has(host)) {
+        // blur caused by our undo command
+        evt.preventDefault();}
+      else {
+        host._emit_code_change();} }
 
-    wset.add(host);
-    await null;
-    try {
-      const src_code = host.src_code;
-      for (const _ of host.with_selection()) {
-        document.execCommand('undo', false);
-        host.raw_src_code = src_code;
-        host.dirty();} }
-    finally {
-      wset.delete(host);} }) }
+  , async 'evt:input'(evt, host) {
+      if (wset.has(host)) {
+        return}
+
+      wset.add(host);
+      await null;
+      try {
+        const src_code = host.src_code;
+        for (const _ of host.with_selection()) {
+          document.execCommand('undo', false);
+          host.raw_src_code = src_code;
+          host.dirty();} }
+      finally {
+        wset.delete(host);} } } }
 
 
 
@@ -253,8 +261,11 @@ function _init_editor_api(host, el_code, state_tip) {
     try {host._restore_state(prev_state);}
     finally {_undoer = save;} }
 
+  if (host._init_state) {
+    state_tip = host._init_state(state_tip);}
 
   const q_async = _create_async_queue();
+  let evt_detail;
   return Object.assign(host,{
     *with_selection() {
       for (const _ of relative_selection_ctxmgr(el_code)) {
@@ -267,6 +278,9 @@ function _init_editor_api(host, el_code, state_tip) {
       for (const _ of host.with_selection()) {
         host.src_code = host.src_code + '';} }
 
+  , _emit_code_change() {
+      _emit_code_event(host, evt_detail, ''); }
+
   , _emit_src_code(el, new_state, shape=['lang', 'src_code']) {
       if (_state_equal(new_state, state_tip, shape)) {
         return}
@@ -275,12 +289,14 @@ function _init_editor_api(host, el_code, state_tip) {
       if (null !== _undoer) {
         _undoer.push(host._save_state(new_state), el); }
 
-      const detail = host._event_from_state(new_state);
-      if (detail) {
-(el || el_code).dispatchEvent(
-            new CustomEvent('src_code',{
-              detail, bubbles: true} ) ); } } } ) }
+      evt_detail = host._event_from_state(new_state);
+      _emit_code_event(host, evt_detail, ':input'); } } ) }
 
+function _emit_code_event(host, detail, kind) {
+  if (detail) {
+    return host.dispatchEvent(
+      new CustomEvent('src_code'+kind,
+        {detail, bubbles: true} ) ) } }
 
 function _state_equal(a,b, shape) {
   for (const k of shape) {
@@ -312,7 +328,6 @@ class CodeEditor extends HTMLElement {
   static with_options(opt={}) {
     return class CodeEditor extends this {
       _dom_connect(el, state0) {
-        state0 = this._init_state(state0);
         code_editor_dom(
           this, el, state0, opt); } } }
 
@@ -332,7 +347,6 @@ class CodeEditor extends HTMLElement {
 
 
   _dom_connect(el, state0) {
-    state0 = this._init_state(state0);
     code_editor_dom(
       this, el, state0, {}); }
 

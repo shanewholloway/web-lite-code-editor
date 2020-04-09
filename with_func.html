@@ -61,9 +61,13 @@ the JSY transpiling <a href='./with_jsy_func.html'>jsy-func-editor</a>.
 
 
 <script>
+  window.addEventListener('src_code:input', async evt => {
+    console.log('... src_code input event')
+  })
+
   window.addEventListener('src_code', async evt => {
     const dyn_evt = window.dyn_evt = evt.detail
-    console.groupCollapsed('src_code event')
+    console.groupCollapsed('src_code change event')
     try {
       console.log('lang: %o', dyn_evt.lang)
       console.log('src_code: %o', dyn_evt.src_code)

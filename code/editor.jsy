@@ -5,7 +5,6 @@ export class CodeEditor extends HTMLElement ::
   static with_options(opt={}) ::
     return class CodeEditor extends this ::
       _dom_connect(el, state0) ::
-        state0 = this._init_state(state0)
         code_editor_dom @
           this, el, state0, opt
 
@@ -25,7 +24,6 @@ export class CodeEditor extends HTMLElement ::
 
 
   _dom_connect(el, state0) ::
-    state0 = this._init_state(state0)
     code_editor_dom @
       this, el, state0, {}
 

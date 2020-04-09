@@ -102,6 +102,10 @@ func main() {
 
 <script>
   window.addEventListener('src_code', evt => {
-    console.log('src_code event:', evt.detail)
+    console.log('src_code change event:', evt.detail)
+  })
+
+  window.addEventListener('src_code:input', async evt => {
+    console.log('... src_code input event')
   })
 </script>
