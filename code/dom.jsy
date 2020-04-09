@@ -72,7 +72,7 @@ export function _init_editor_api(host, el_code, state_tip) ::
   function _do_undo(prev_state) ::
     const save = _undoer
     _undoer = null
-    try :: host.restoreState(prev_state)
+    try :: host._restore_state(prev_state)
     finally :: _undoer = save
 
 
@@ -95,12 +95,13 @@ export function _init_editor_api(host, el_code, state_tip) ::
 
       state_tip = new_state
       if null !== _undoer ::
-        _undoer.push @ new_state, el
+        _undoer.push @ host._save_state(new_state), el
 
-      const evt = new CustomEvent @ 'src_code', @{}
-        bubbles: true, detail: new_state
-
-      ;(el || el_code).dispatchEvent(evt)
+      const detail = host._event_from_state @ new_state
+      if detail ::
+        ;(el || el_code).dispatchEvent @
+            new CustomEvent @ 'src_code', @{}
+              detail, bubbles: true
 
 
 function _state_equal(a,b, shape) ::

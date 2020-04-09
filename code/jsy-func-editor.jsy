@@ -1,0 +1,16 @@
+import {FuncCodeEditorBase, DynFuncCompiler} from './func-editor.jsy'
+import jsy_transpile from 'https://cdn.jsdelivr.net/npm/jsy-transpile/esm/index.mjs'
+
+
+export class DynJSYFuncCompiler extends DynFuncCompiler ::
+  transpile(src_code) ::
+    return jsy_transpile @ src_code
+
+
+export default JSYFuncCodeEditor
+export class JSYFuncCodeEditor extends FuncCodeEditorBase ::
+  createCompiler() :: return new DynJSYFuncCompiler()
+
+JSYFuncCodeEditor.prototype.default_lang = 'jsy'
+customElements.define @ 'jsy-func-editor', JSYFuncCodeEditor
+

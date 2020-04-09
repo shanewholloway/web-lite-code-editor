@@ -249,7 +249,7 @@ function _init_editor_api(host, el_code, state_tip) {
   function _do_undo(prev_state) {
     const save = _undoer;
     _undoer = null;
-    try {host.restoreState(prev_state);}
+    try {host._restore_state(prev_state);}
     finally {_undoer = save;} }
 
 
@@ -272,12 +272,13 @@ function _init_editor_api(host, el_code, state_tip) {
 
       state_tip = new_state;
       if (null !== _undoer) {
-        _undoer.push(new_state, el); }
+        _undoer.push(host._save_state(new_state), el); }
 
-      const evt = new CustomEvent('src_code',{
-        bubbles: true, detail: new_state} )
-
-      ;(el || el_code).dispatchEvent(evt);} } ) }
+      const detail = host._event_from_state(new_state);
+      if (detail) {
+(el || el_code).dispatchEvent(
+            new CustomEvent('src_code',{
+              detail, bubbles: true} ) ); } } } ) }
 
 
 function _state_equal(a,b, shape) {
@@ -306,71 +307,95 @@ function _init_code_dom(el_code, opt) {
   Object.assign(el_code.style,
     {... _ed_style, ... opt.style || {}}); }
 
-function bindCodeEditor(fn_src_highlight, opt = {}) {
-  opt ={... opt || {}};
+class CodeEditor extends HTMLElement {
+  static with_options(opt={}) {
+    return class CodeEditor extends this {
+      _dom_connect(el, state0) {
+        state0 = this._init_state(state0);
+        code_editor_dom(
+          this, el, state0, opt); } } }
 
-  class CodeEditor extends HTMLElement {
-    connectedCallback() {
-      const src_code = this.textContent
-        .replace(/^\s*\r?\n/, '');
-      this.textContent = '';
-      const state0 ={src_code, lang: this.lang};
-
-      const el = this._el_code = this._init_dom(this.ownerDocument);
-      this._disconnect = code_editor_dom(this, el, state0, opt);
-      this.src_code = src_code;}
-
-    disconnectedCallback() {
-      if (this._disconnect) {
-        this._disconnect();} }
-
-    _init_dom(odoc) {
-      const el_code = odoc.createElement('code');
-      const el_pre = odoc.createElement('pre');
-      el_pre.appendChild(el_code);
-      this.appendChild(el_pre);
-      return el_code}
+  static define_as(key) {
+    customElements.define(key, this); }
 
 
-    static get observedAttributes() {
-      return ['lang'] }
-    attributeChangedCallback() {
-      this.dirty();}
+  connectedCallback() {
+    const src_code = this.textContent
+      .replace(/^\s*\r?\n/, '');
+    this.textContent = '';
+    const state0 ={src_code, lang: this.lang};
 
-    dirty() {}
-    refresh() {}
+    const el = this._el_code = this._init_dom(this.ownerDocument);
+    this._dom_connect(el, state0);
+    this.src_code = src_code;}
 
-    get lang() {return this.getAttribute('lang')}
-    set lang(lang) {this.setAttribute('lang', lang);}
 
-    get raw_src_code() {
-      return this._el_code.textContent}
-    set raw_src_code(src_code) {
-      const {_el_code: el, lang} = this;
-      el.innerHTML = '';
-      el.textContent = src_code;
+  _dom_connect(el, state0) {
+    state0 = this._init_state(state0);
+    code_editor_dom(
+      this, el, state0, {}); }
 
-      if (lang) {
-        const cls_lang = `language-${lang}`;
-        el.className = cls_lang || '';
-        el.parentNode.className = cls_lang || '';}
 
-      this._emit_src_code(this, {src_code, lang}); }
+  disconnectedCallback() {
+    if (this._dom_disconnect) {
+      this._dom_disconnect();} }
 
-    get src_code() {
-      return this._el_code.textContent}
-    set src_code(src_code) {
-      this.raw_src_code = src_code;
-      fn_src_highlight(this._el_code);}
+  _init_dom(odoc) {
+    const el_code = odoc.createElement('code');
+    const el_pre = odoc.createElement('pre');
+    el_pre.appendChild(el_code);
+    this.appendChild(el_pre);
+    return el_code}
 
-    restoreState({lang, src_code}) {
-      this.lang = lang;
-      this.src_code = src_code;} }
 
-  return CodeEditor}
+  static get observedAttributes() {
+    return ['lang'] }
+  attributeChangedCallback() {
+    this.dirty();}
 
-const PrismCodeEditor = bindCodeEditor(Prism.highlightElement);
+  dirty() {}
+  refresh() {}
+
+  get lang() {return this.getAttribute('lang') || this.default_lang}
+  set lang(lang) {this.setAttribute('lang', lang);}
+
+  get raw_src_code() {
+    return this._el_code.textContent}
+  set raw_src_code(src_code) {
+    const {_el_code: el, lang} = this;
+    el.innerHTML = '';
+    el.textContent = src_code;
+
+    if (lang) {
+      const cls_lang = `language-${lang}`;
+      el.className = cls_lang || '';
+      el.parentNode.className = cls_lang || '';}
+
+    this._emit_src_code(this, {src_code, lang}); }
+
+  get src_code() {
+    return this._el_code.textContent}
+  set src_code(src_code) {
+    this.raw_src_code = src_code;
+    this._highlight_src(src_code, this._el_code);}
+
+  _init_state(state) {return state}
+  _save_state(state) {return state}
+  _restore_state({lang, src_code}) {
+    this.lang = lang;
+    this.src_code = src_code;}
+
+  _event_from_state(state) {
+    return {... state} }
+
+  _highlight_src(src_code, el_code) {} }
+
+class PrismCodeEditor extends CodeEditor {
+  _highlight_src(src_code, el_code) {
+    Prism.highlightElement(el_code);} }
+
 customElements.define('prism-code-editor', PrismCodeEditor);
 
+export default PrismCodeEditor;
 export { PrismCodeEditor };
 //# sourceMappingURL=prism-editor.mjs.map

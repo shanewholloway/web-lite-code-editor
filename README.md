@@ -37,9 +37,11 @@ An alternative build of `esm/prism-editor.mjs` ::
 
 ```javascript
 import Prism from 'prismjs'
-import {bindCodeEditor} from 'lite-code-editor/esm/editor.mjs'
+import {CodeEditor} from 'lite-code-editor/esm/editor.mjs'
 
-const PrismCodeEditor = bindCodeEditor(Prism.highlightElement)
+class PrismCodeEditor extends CodeEditor ::
+  _highlight_src(src_code, el_code) ::
+    Prism.highlightElement(el_code)
 
 customElements.define('prism-code-editor', PrismCodeEditor)
 ```

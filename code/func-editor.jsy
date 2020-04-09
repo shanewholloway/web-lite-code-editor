@@ -1,0 +1,86 @@
+import {CodeEditor} from './editor.jsy'
+
+
+export default FuncCodeEditorBase
+export class FuncCodeEditorBase extends CodeEditor ::
+  constructor() ::
+    super()
+
+    this.compiler = this.createCompiler()
+    this.dyn_proto = this._bindDynProto(this)
+
+  _init_state(state) :: return ''
+
+  _bindDynProto(host) ::
+    const {compiler} = host
+    return @{}
+      compiler
+      get dyn_fn() ::
+        let fn = this._dyn_fn
+        if undefined === fn ::
+          try ::
+            fn = this.dyn_compile()
+          catch err ::
+            fn = null
+          this._dyn_fn = fn
+        return fn
+
+      dyn_compile(ctx) ::
+        if ! ctx ::
+          ctx = host.as_compile_ctx(host)
+
+        return compiler.compile @
+          this.src_code, ctx
+
+
+  get name() :: return this.getAttribute('name') || this.default_name || ''
+  set name(value) :: this.setAttribute('name', value)
+
+  get func() :: return this.getAttribute('func') || this.default_func || ''
+  set func(value) :: this.setAttribute('func', value)
+
+  get args() :: return this.getAttribute('args') || this.default_args || ''
+  set args(value) :: this.setAttribute('args', value)
+
+  as_compile_ctx({name, func, args}) ::
+    return @{} name, func, args
+
+
+  _highlight_src(src_code, el_code) ::
+    Prism.highlightElement(el_code)
+
+  _event_from_state(state) ::
+    return @{}
+      __proto__: this.dyn_proto
+      ... state
+
+FuncCodeEditorBase.prototype.default_lang = 'js'
+
+
+export class DynFuncCompiler ::
+  compile(src_code, ctx) ::
+    const js_src = this.transpile @
+      '\n\n' + src_code
+
+    const js_compile_src =
+      this.as_compile_src(js_src, ctx)
+
+    const fn_compile = new Function @
+      `return (${js_compile_src}\n)`
+
+    return fn_compile()
+
+  transpile(src_code) ::
+    return src_code
+
+  as_compile_src(js_src, ctx) ::
+    return this.as_fn_src(js_src, ctx)
+
+  as_fn_src(js_src, {func, name, args}) ::
+    if ! func.match(/\bfunction\b/) ::
+      const [_,pre,post] = func.match(/^([^\*]*)(\*.*)?$/)
+      func = `${pre||''} function ${post||''}`
+
+    return `${func.trim()} ${name||''}(${args||''}){ ${js_src} }`
+
+

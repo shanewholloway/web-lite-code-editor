@@ -1,0 +1,8 @@
+import {FuncCodeEditorBase, DynFuncCompiler} from './func-editor.jsy'
+
+
+export class JSFuncCodeEditor extends FuncCodeEditorBase ::
+  createCompiler() :: return new DynFuncCompiler()
+
+customElements.define @ 'js-func-editor', JSFuncCodeEditor
+

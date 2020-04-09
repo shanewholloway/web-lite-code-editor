@@ -1,66 +1,86 @@
 import {code_editor_dom} from './dom.jsy'
 
-export default bindCodeEditor
-export function bindCodeEditor(fn_src_highlight, opt = {}) ::
-  opt = @{} ... opt || {}
+export default CodeEditor
+export class CodeEditor extends HTMLElement ::
+  static with_options(opt={}) ::
+    return class CodeEditor extends this ::
+      _dom_connect(el, state0) ::
+        state0 = this._init_state(state0)
+        code_editor_dom @
+          this, el, state0, opt
 
-  class CodeEditor extends HTMLElement ::
-    connectedCallback() ::
-      const src_code = this.textContent
-        .replace(/^\s*\r?\n/, '')
-      this.textContent = ''
-      const state0 = @{} src_code, lang: this.lang
-
-      const el = this._el_code = this._init_dom(this.ownerDocument)
-      this._disconnect = code_editor_dom(this, el, state0, opt)
-      this.src_code = src_code
-
-    disconnectedCallback() ::
-      if this._disconnect ::
-        this._disconnect()
-
-    _init_dom(odoc) ::
-      const el_code = odoc.createElement('code')
-      const el_pre = odoc.createElement('pre')
-      el_pre.appendChild(el_code)
-      this.appendChild(el_pre)
-      return el_code
+  static define_as(key) ::
+    customElements.define @ key, this
 
 
-    static get observedAttributes() ::
-      return @[] 'lang'
-    attributeChangedCallback() ::
-      this.dirty()
+  connectedCallback() ::
+    const src_code = this.textContent
+      .replace(/^\s*\r?\n/, '')
+    this.textContent = ''
+    const state0 = @{} src_code, lang: this.lang
 
-    dirty() ::
-    refresh() ::
+    const el = this._el_code = this._init_dom(this.ownerDocument)
+    this._dom_connect(el, state0)
+    this.src_code = src_code
 
-    get lang() :: return this.getAttribute('lang')
-    set lang(lang) :: this.setAttribute('lang', lang)
 
-    get raw_src_code() ::
-      return this._el_code.textContent
-    set raw_src_code(src_code) ::
-      const {_el_code: el, lang} = this
-      el.innerHTML = ''
-      el.textContent = src_code
+  _dom_connect(el, state0) ::
+    state0 = this._init_state(state0)
+    code_editor_dom @
+      this, el, state0, {}
 
-      if lang ::
-        const cls_lang = `language-${lang}`
-        el.className = cls_lang || ''
-        el.parentNode.className = cls_lang || ''
 
-      this._emit_src_code @ this, {src_code, lang}
+  disconnectedCallback() ::
+    if this._dom_disconnect ::
+      this._dom_disconnect()
 
-    get src_code() ::
-      return this._el_code.textContent
-    set src_code(src_code) ::
-      this.raw_src_code = src_code
-      fn_src_highlight(this._el_code)
+  _init_dom(odoc) ::
+    const el_code = odoc.createElement('code')
+    const el_pre = odoc.createElement('pre')
+    el_pre.appendChild(el_code)
+    this.appendChild(el_pre)
+    return el_code
 
-    restoreState({lang, src_code}) ::
-      this.lang = lang
-      this.src_code = src_code
 
-  return CodeEditor
+  static get observedAttributes() ::
+    return @[] 'lang'
+  attributeChangedCallback() ::
+    this.dirty()
+
+  dirty() ::
+  refresh() ::
+
+  get lang() :: return this.getAttribute('lang') || this.default_lang
+  set lang(lang) :: this.setAttribute('lang', lang)
+
+  get raw_src_code() ::
+    return this._el_code.textContent
+  set raw_src_code(src_code) ::
+    const {_el_code: el, lang} = this
+    el.innerHTML = ''
+    el.textContent = src_code
+
+    if lang ::
+      const cls_lang = `language-${lang}`
+      el.className = cls_lang || ''
+      el.parentNode.className = cls_lang || ''
+
+    this._emit_src_code @ this, {src_code, lang}
+
+  get src_code() ::
+    return this._el_code.textContent
+  set src_code(src_code) ::
+    this.raw_src_code = src_code
+    this._highlight_src(src_code, this._el_code)
+
+  _init_state(state) :: return state
+  _save_state(state) :: return state
+  _restore_state({lang, src_code}) ::
+    this.lang = lang
+    this.src_code = src_code
+
+  _event_from_state(state) ::
+    return @{} ... state
+
+  _highlight_src(src_code, el_code) ::
 

@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='utf-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <title>JSY Func Editor</title>
+
+  <link rel='icon' href='data:image/png;base64,' />
+  <link rel='stylesheet' crossorigin='anonymous' href='https://cdn.jsdelivr.net/npm/picnic@6.5.1/picnic.min.css' />
+  <style>
+    body {
+      max-width: 60em;
+      margin: 2em auto;
+    }
+  </style>
+
+  <link href='https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css' rel='stylesheet' />
+  <script src='https://cdn.jsdelivr.net/npm/prismjs/prism.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/prismjs/plugins/autoloader/prism-autoloader.min.js'></script>
+	<script src='https://cdn.jsdelivr.net/npm/prism-jsy/iife/prism-jsy-syntax.js'></script>
+
+  <!--script type=module src='https://cdn.jsdelivr.net/npm/lite-code-editor/esm/prism-editor.mjs'></script-->
+  <script type=module src='./esm/jsy-func-editor.mjs'></script>
+</head>
+
+<main>
+<h1>JSY Transpiling Function Editor
+<br/><small>built with <code>lite-code-editor</code></small></h1>
+
+<jsy-func-editor name='bingo' func='async' args='arg_a,arg_b,arg_c'>
+  const ts0 = new Date
+  const obj = @{}
+    ts0, self: this,
+    arg_a, arg_b, arg_c
+
+  console.log @ 'In edited JSY func before await', obj
+
+  await new Promise @ y =>
+    setTimeout @ y, 1000
+
+  const ts1 = obj.ts1 = new Date()
+  obj.td = ts1 - ts0
+  console.log @ 'In edited JSY func after await', obj
+  return obj
+</jsy-func-editor>
+
+<p>
+  <button type=button onclick='showNewest()'>Run it!</button>
+  <span> and then use the web developer console for output!</span>
+</p>
+<p>
+Find more about <code>lite-code-editor</code> 
+<a href='https://shanewholloway.github.io/web-lite-code-editor/'>in this demo</a></li>, 
+on <a href='https://github.com/shanewholloway/web-lite-code-editor/'>github</a></li>,
+or on <a href='https://www.npmjs.com/package/lite-code-editor'>npmjs</a></li>.
+<br/>
+Also take a look at <a href='./with_func.html'>js-func-editor</a> and
+the JSY transpiling <a href='./with_jsy_func.html'>jsy-func-editor</a>.
+</p>
+
+</main>
+
+
+<script>
+  window.addEventListener('src_code', async evt => {
+    const dyn_evt = window.dyn_evt = evt.detail
+    console.groupCollapsed('src_code event')
+    try {
+      console.log('lang: %o', dyn_evt.lang)
+      console.log('src_code: %o', dyn_evt.src_code)
+      console.log('dyn_fn: %o', dyn_evt.dyn_fn)
+    } finally {
+      console.groupEnd()
+    }
+  })
+
+  window.showNewest = showNewest
+  async function showNewest() {
+    if (dyn_evt.dyn_fn)
+      try {
+        console.log('%cdyn_fn() :: invoke', 'color: green')
+        const res = dyn_evt.dyn_fn()
+        console.log('%cdyn_fn() :: result: %o', 'color: green', res)
+        console.log('%cdyn_fn() :: await result: %o', 'color: green', await res)
+      } catch (err) {
+        console.warn('%cdyn_fn() :: error: %o', 'color: green', err)
+      }
+  }
+</script>

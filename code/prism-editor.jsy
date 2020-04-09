@@ -1,5 +1,9 @@
-import {bindCodeEditor} from './editor.jsy'
+import {CodeEditor} from './editor.jsy'
 
-export const PrismCodeEditor = bindCodeEditor(Prism.highlightElement)
+export default PrismCodeEditor
+export class PrismCodeEditor extends CodeEditor ::
+  _highlight_src(src_code, el_code) ::
+    Prism.highlightElement(el_code)
+
 customElements.define @ 'prism-code-editor', PrismCodeEditor
 

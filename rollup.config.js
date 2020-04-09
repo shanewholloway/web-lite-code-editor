@@ -11,10 +11,14 @@ const plugins = [rpi_jsy(), rpi_resolve()]
 const plugins_web = [ ... plugins, rpi_terser({}) ]
 
 
+add_jsy('all')
+add_jsy('editor')
+add_jsy('func-editor')
+
 add_jsy('index', {minify: true})
 add_jsy('prism-editor', {minify: true})
-add_jsy('editor')
-add_jsy('all')
+add_jsy('js-func-editor', {minify: true})
+add_jsy('jsy-func-editor', {minify: true})
 
 
 function add_jsy(src_name, opt={}) {
@@ -26,5 +30,5 @@ function add_jsy(src_name, opt={}) {
   plugins_web && opt.minify && configs.push({
     input: `code/${src_name}.jsy`,
     output: { file: `esm/${src_name}.min.mjs`, format: 'es', sourcemap },
-    plugins: plugins_web })
+    plugins: plugins_web, external })
 }
