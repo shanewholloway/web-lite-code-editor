@@ -230,11 +230,12 @@ function bind_evt_dispatch(events, ... ex_args) {
 function bind_evt_editor_input() {
   // specialized input event to work in concert with Undoer
   const wset = new WeakSet();
-  return (( evt, host ) => {
+  return (async ( evt, host ) => {
     if (wset.has(host)) {
       return}
 
     wset.add(host);
+    await null;
     try {
       const src_code = host.src_code;
       for (const _ of host.with_selection()) {
