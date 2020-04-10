@@ -261,12 +261,10 @@ function _init_editor_api(host, el_code, state_tip) {
     try {host._restore_state(prev_state);}
     finally {_undoer = save;} }
 
-  if (host._init_state) {
-    state_tip = host._init_state(state_tip);}
-
   const q_async = _create_async_queue();
-  let evt_detail;
-  return Object.assign(host,{
+  let evt_detail = host._event_from_state(state_tip);
+
+  Object.assign(host,{
     *with_selection() {
       for (const _ of relative_selection_ctxmgr(el_code)) {
         yield;} }
@@ -290,7 +288,12 @@ function _init_editor_api(host, el_code, state_tip) {
         _undoer.push(host._save_state(new_state), el); }
 
       evt_detail = host._event_from_state(new_state);
-      _emit_code_event(host, evt_detail, ':input'); } } ) }
+      _emit_code_event(host, evt_detail, ':input'); } } );
+
+
+  q_async(host._emit_code_change);
+  return host}
+
 
 function _emit_code_event(host, detail, kind) {
   if (detail) {
@@ -317,7 +320,7 @@ const _ed_style ={
 , whiteSpace: 'pre-wrap'};
 
 function _init_code_dom(el_code, opt) {
-  const attrs = {... _ed_attrs, ... opt.attrs || {}}; 
+  const attrs = {... _ed_attrs, ... opt.attrs || {}};
   for (const k in attrs) {
     el_code.setAttribute(k, attrs[k]);}
 
@@ -394,7 +397,6 @@ class CodeEditor extends HTMLElement {
     this.raw_src_code = src_code;
     this._highlight_src(src_code, this._el_code);}
 
-  _init_state(state) {return state}
   _save_state(state) {return state}
   _restore_state({lang, src_code}) {
     this.lang = lang;

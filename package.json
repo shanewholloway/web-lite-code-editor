@@ -26,12 +26,13 @@
   "dependencies": {},
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^7.1.1",
-    "rollup": "^2.3.3",
-    "rollup-plugin-jsy": "^1.6.3",
+    "rollup": "^2.4.0",
+    "rollup-plugin-jsy": "^1.6.4",
     "rollup-plugin-terser": "^5.3.0",
     "undoer": "^0.1.1"
   },
   "scripts": {
+    "start": "npx qsrv -- ./esm *.html",
     "clean": "rm -rf ./cjs/* ./esm/* ./umd/*",
     "build": "rollup --config",
     "watch": "npm -s run build -- --watch",

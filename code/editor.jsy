@@ -71,7 +71,6 @@ export class CodeEditor extends HTMLElement ::
     this.raw_src_code = src_code
     this._highlight_src(src_code, this._el_code)
 
-  _init_state(state) :: return state
   _save_state(state) :: return state
   _restore_state({lang, src_code}) ::
     this.lang = lang

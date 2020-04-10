@@ -263,12 +263,10 @@ function _init_editor_api(host, el_code, state_tip) {
     try {host._restore_state(prev_state);}
     finally {_undoer = save;} }
 
-  if (host._init_state) {
-    state_tip = host._init_state(state_tip);}
-
   const q_async = _create_async_queue();
-  let evt_detail;
-  return Object.assign(host,{
+  let evt_detail = host._event_from_state(state_tip);
+
+  Object.assign(host,{
     *with_selection() {
       for (const _ of relative_selection_ctxmgr(el_code)) {
         yield;} }
@@ -292,7 +290,12 @@ function _init_editor_api(host, el_code, state_tip) {
         _undoer.push(host._save_state(new_state), el); }
 
       evt_detail = host._event_from_state(new_state);
-      _emit_code_event(host, evt_detail, ':input'); } } ) }
+      _emit_code_event(host, evt_detail, ':input'); } } );
+
+
+  q_async(host._emit_code_change);
+  return host}
+
 
 function _emit_code_event(host, detail, kind) {
   if (detail) {
@@ -319,7 +322,7 @@ const _ed_style ={
 , whiteSpace: 'pre-wrap'};
 
 function _init_code_dom(el_code, opt) {
-  const attrs = {... _ed_attrs, ... opt.attrs || {}}; 
+  const attrs = {... _ed_attrs, ... opt.attrs || {}};
   for (const k in attrs) {
     el_code.setAttribute(k, attrs[k]);}
 
@@ -396,7 +399,6 @@ class CodeEditor extends HTMLElement {
     this.raw_src_code = src_code;
     this._highlight_src(src_code, this._el_code);}
 
-  _init_state(state) {return state}
   _save_state(state) {return state}
   _restore_state({lang, src_code}) {
     this.lang = lang;
@@ -414,7 +416,7 @@ class FuncCodeEditorBase extends CodeEditor {
     this.compiler = this.createCompiler();
     this.dyn_proto = this._bindDynProto(this);}
 
-  _init_state(state) {return ''}
+  get dyn_fn() {return this.dyn_proto.dyn_fn}
 
   _bindDynProto(host) {
     const {compiler} = host;
@@ -424,18 +426,14 @@ class FuncCodeEditorBase extends CodeEditor {
         let fn = this._dyn_fn;
         if (undefined === fn) {
           try {
-            fn = this.dyn_compile();}
+            const ctx = host.as_compile_ctx(host);
+            fn = compiler.compile_func(
+              this.src_code, ctx); }
           catch (err) {
             fn = null;}
           this._dyn_fn = fn;}
-        return fn}
+        return fn} } }
 
-    , dyn_compile(ctx) {
-        if (! ctx) {
-          ctx = host.as_compile_ctx(host);}
-
-        return compiler.compile(
-          this.src_code, ctx) } } }
 
 
   get name() {return this.getAttribute('name') || this.default_name || ''}
@@ -463,12 +461,12 @@ FuncCodeEditorBase.prototype.default_lang = 'js';
 
 
 class DynFuncCompiler {
-  compile(src_code, ctx) {
+  compile_func(src_code, ctx) {
     const js_src = this.transpile(
       '\n\n' + src_code);
 
     const js_compile_src =
-      this.as_compile_src(js_src, ctx);
+      this.as_func_src(js_src, ctx);
 
     const fn_compile = new Function(
       `return (${js_compile_src}\n)`);
@@ -478,10 +476,7 @@ class DynFuncCompiler {
   transpile(src_code) {
     return src_code}
 
-  as_compile_src(js_src, ctx) {
-    return this.as_fn_src(js_src, ctx)}
-
-  as_fn_src(js_src, {func, name, args}) {
+  as_func_src(js_src, {func, name, args}) {
     if (! func.match(/\bfunction\b/)) {
       const [_,pre,post] = func.match(/^([^\*]*)(\*.*)?$/);
       func = `${pre||''} function ${post||''}`;}
