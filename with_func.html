@@ -19,19 +19,18 @@
   <script src='https://cdn.jsdelivr.net/npm/prismjs/prism.min.js'></script>
   <script src='https://cdn.jsdelivr.net/npm/prismjs/plugins/autoloader/prism-autoloader.min.js'></script>
 
-  <!--script type=module src='https://cdn.jsdelivr.net/npm/lite-code-editor/esm/js-func-editor.mjs'></script-->
-  <script type=module src='./esm/js-func-editor.mjs'></script>
+  <!--script type=module src='https://cdn.jsdelivr.net/npm/lite-code-editor/esm/js-func-editor.js'></script-->
+  <script type=module src='./esm/js-func-editor.js'></script>
 </head>
 
 <main>
 <h1>JavaScript Function Editor
 <br/><small>built with <code>lite-code-editor</code></small></h1>
 
-<js-func-editor name='bingo' func='async' args='arg_a,arg_b,arg_c'>
+<js-func-editor func='async'>
   const ts0 = new Date
   const obj = {
-    ts0, self: this,
-    arg_a, arg_b, arg_c }
+    ts0, self: this}
 
   console.log( 'In edited JSY func before await', obj )
 

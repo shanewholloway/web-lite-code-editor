@@ -421,108 +421,17 @@ class CodeEditor extends HTMLElement {
     if (globalThis.Prism) {
       Prism.highlightElement(el_code);} } }
 
-class FuncCodeEditorBase extends CodeEditor {
-  constructor() {
-    super();
+function highlight_src(src_code, el_code) {
+  Prism.highlightElement(el_code);}
 
-    this.compiler = this.createCompiler();
-    this.dyn_proto = this._bindDynProto(this, this.compiler); }
+function with_prism(tgt) {
+  (tgt.prototype || tgt).highlight_src = highlight_src;
+  return tgt}
 
-  createCompiler() {
-    return new DynFuncCompiler(this.transpile)}
+const PrismCodeEditor =
+  CodeEditor.define_with(
+    'prism-code-editor'
+  , {highlight_src} );
 
-  _bindDynProto(host, compiler) {
-    return {
-      compiler
-    , lazy() {
-        let ctx = host.as_compile_ctx(host);
-        let dyn = compiler.compile_func(this.src_code, ctx);
-        Object.assign(this, dyn);
-        this.lazy = _=>this;
-        return this}
-
-    , get dyn_fn() {return this.lazy().fn}
-    , get dyn_js() {return this.lazy().js} } }
-
-
-  static get observedAttributes() {
-    return super.observedAttributes.concat(['name', 'func', 'args']) }
-
-  get name() {return this.getAttribute('name') || this.default_name || ''}
-  set name(value) {this.setAttribute('name', value);}
-
-  get func() {return this.getAttribute('func') || this.default_func || ''}
-  set func(value) {this.setAttribute('func', value);}
-
-  get args() {return this.getAttribute('args') || this.default_args || ''}
-  set args(value) {this.setAttribute('args', value);}
-
-  get mode() {return this.getAttribute('mode')}
-  set mode(value) {return this.setAttribute('mode', value)}
-
-  as_compile_ctx({name, func, args}) {
-    return {name, func, args} }
-
-
-  get dyn_fn() {return this.dyn?.dyn_fn}
-  get dyn_js() {return this.dyn?.dyn_js}
-
-  _event_from_state(state) {
-    return this.dyn ={
-      __proto__: this.dyn_proto
-    , ... state} }
-
-  refresh_code() {
-    let mode = this.mode;
-    if (! mode) {
-      this._el_dual &&= void this._el_dual.parentNode.remove();
-      return}
-
-    this._el_dual ||= this._init_code_dom(mode);
-
-    let dyn = this.dyn.lazy();
-    let src = this.hasAttribute('debug') ? ''+dyn.fn : dyn.js;
-
-    if (null != dyn.err) {
-      src = `// ${dyn.err}\n\n${src}`;}
-
-    this.render_code('js', src, this._el_dual, true); } }
-
-
-class DynFuncCompiler {
-  constructor(fn_transpile=(src=>src)) {
-    this.transpile = fn_transpile;}
-
-  compile_func(src_code, ctx) {
-    let res = {};
-    try {
-      res.js = this.transpile(src_code);}
-    catch (err) {
-      res.err = err;
-      return res}
-
-    try {
-      let fn_compile = new Function(
-  `return (${this.as_func_src(res.js, ctx)})`);
-
-      res.fn = fn_compile();}
-    catch (err) {
-      res.err = err;
-      return res}
-
-    return res}
-
-  as_func_src(js_src, {func, name, args}) {
-    if (! func.match(/\bfunction\b/)) {
-      const [_,pre,post] = func.match(/^([^\*]*)(\*.*)?$/);
-      func = `${pre||''} function ${post||''}`;}
-
-    return `${func.trim()} ${name||''}(${args||''}){\n${js_src}\n}`} }
-
-const JSFuncCodeEditor =
-  FuncCodeEditorBase.define_with(
-    'js-func-editor'
-  , {default_lang: 'js'} );
-
-export { JSFuncCodeEditor, JSFuncCodeEditor as default };
-//# sourceMappingURL=js-func-editor.mjs.map
+export { PrismCodeEditor, PrismCodeEditor as default, with_prism };
+//# sourceMappingURL=prism-editor.js.map

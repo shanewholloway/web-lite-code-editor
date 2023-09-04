@@ -4,6 +4,7 @@ Lightweight code editor web component using `contentEditable=true` and
 [PrismJS][]-like highlighting
 
   [PrismJS]: https://prismjs.com
+  [JSY]: https://jsy-lang.github.io
 
 
 ## Demo
@@ -12,14 +13,18 @@ Github.io hosted [lite-code-editor demo](https://shanewholloway.github.io/web-li
 
 ### Quickstart
 
+#### In-browser JavaScript interactive editing and compilation:
+
+See [JavaScript Demo](https://shanewholloway.github.io/web-lite-code-editor/with_func.html)
+
 ```html
 ...
 <link href='https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css' rel='stylesheet' />
 <script src='https://cdn.jsdelivr.net/npm/prismjs/prism.js'></script>
-<script type=module src='https://cdn.jsdelivr.net/npm/lite-code-editor/esm/prism-editor.mjs'></script>
+<script type=module src='https://cdn.jsdelivr.net/npm/lite-code-editor/esm/js-func-editor.js'></script>
 ...
 
-<prism-code-editor lang='javascript'>
+<js-func-editor func='async'>
   if (true != false) {
     console.log(
       'A log message',
@@ -27,23 +32,52 @@ Github.io hosted [lite-code-editor demo](https://shanewholloway.github.io/web-li
         meta: import.meta }
     )
   }
-</prism-code-editor>
+</js-func-editor>
 ```
 
+#### In-browser [JSY][] interactive editing and compilation:
 
-### Code start
+See [JSY Demo](https://shanewholloway.github.io/web-lite-code-editor/with_jsy_func.html)
 
-An alternative build of `esm/prism-editor.mjs` ::
+```html
+...
+<link href='https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/prismjs/prism.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/prism-jsy/iife/prism-jsy-syntax.js'></script>
+<script type=module src='https://cdn.jsdelivr.net/npm/lite-code-editor/esm/jsy-func-editor.js'></script>
+...
 
-```javascript
-import Prism from 'prismjs'
-import {CodeEditor} from 'lite-code-editor/esm/editor.mjs'
+<jsy-func-editor func='async'>
+  if true != false ::
+    console.log @
+      'A log message'
+      @{} ts: new Date
+          meta: import.meta
+</jsy-func-editor>
+```
 
-class PrismCodeEditor extends CodeEditor ::
-  _highlight_src(src_code, el_code) ::
-    Prism.highlightElement(el_code)
+#### [PrismJS]() interactive editing
 
-customElements.define('prism-code-editor', PrismCodeEditor)
+See [Multi-language Demo](https://shanewholloway.github.io/web-lite-code-editor/)
+
+```html
+...
+<link href='https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/prismjs/prism.js'></script>
+...
+<script type=module src='https://cdn.jsdelivr.net/npm/lite-code-editor/esm/prism-editor.js'></script>
+...
+
+<prism-code-editor lang='python'>
+    def fib(n):
+        a, b = 0, 1
+        while a < n:
+            print(a, end=' ')
+            a, b = b, a+b
+        print()
+
+    fib(1000)
+</prism-code-editor>
 ```
 
 

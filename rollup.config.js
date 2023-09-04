@@ -24,11 +24,11 @@ add_jsy('jsy-func-editor', {minify: true})
 function add_jsy(src_name, opt={}) {
   configs.push({
     input: `code/${src_name}.jsy`,
-    output: { file: `esm/${src_name}.mjs`, format: 'es', sourcemap },
+    output: { file: `esm/${src_name}.js`, format: 'es', sourcemap },
     plugins, external })
 
   plugins_web && opt.minify && configs.push({
     input: `code/${src_name}.jsy`,
-    output: { file: `esm/${src_name}.min.mjs`, format: 'es', sourcemap },
+    output: { file: `esm/${src_name}.min.js`, format: 'es', sourcemap },
     plugins: plugins_web, external })
 }
