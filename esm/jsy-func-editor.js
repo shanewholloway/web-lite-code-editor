@@ -319,20 +319,11 @@ const _ed_attrs = {
   contentEditable: true
 , spellcheck: false};
 
-const _ed_style = {
-  outline: 'none'
-, overflowWrap: 'break-word'
-, overflowY: 'auto'
-, resize: 'vertical'
-, whiteSpace: 'pre-wrap'};
-
 function _init_code_dom(el_code, opt) {
-  const attrs = {... _ed_attrs, ... opt.attrs || {}};
-  for (const k in attrs) {
-    el_code.setAttribute(k, attrs[k]);}
+  for (let [k,v] of Object.entries({... _ed_attrs, ... opt.attrs}) ) {
+    el_code.setAttribute(k,v);}
 
-  Object.assign(el_code.style,
-    {... _ed_style, ... opt.style || {}}); }
+  Object.assign(el_code.style, opt.style); }
 
 class CodeEditor extends HTMLElement {
   static with_options(opt={}) {
@@ -354,7 +345,7 @@ class CodeEditor extends HTMLElement {
     this.textContent = '';
     const state0 ={src_code, lang: this.lang};
 
-    const el = this._el_code = this._init_code_dom();
+    const el = this._el_code = this._init_code_dom('editor');
     this._dom_connect(el, state0);
     this.src_code = src_code;}
 

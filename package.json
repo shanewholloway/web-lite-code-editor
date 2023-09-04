@@ -1,6 +1,6 @@
 {
   "name": "lite-code-editor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Lightweight web code editor (contentEditable)",
   "license": "BSD-2-Clause",
   "author": "Shane Holloway <shane.holloway@ieee.org>",
@@ -31,7 +31,7 @@
     "undoer": "^0.1.1"
   },
   "scripts": {
-    "start": "npx qsrv -- ./esm *.html",
+    "start": "npx qsrv --port 8081 -- ./esm *.html",
     "clean": "rm -rf ./cjs/* ./esm/* ./umd/*",
     "build": "rollup --config",
     "watch": "npm -s run build -- --watch",

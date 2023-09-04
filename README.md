@@ -47,7 +47,12 @@ See [JSY Demo](https://shanewholloway.github.io/web-lite-code-editor/with_jsy_fu
 <script type=module src='https://cdn.jsdelivr.net/npm/lite-code-editor/esm/jsy-func-editor.js'></script>
 ...
 
-<jsy-func-editor func='async'>
+<style>
+  jsy-func-editor { display: flex; flex-wrap: wrap; }
+  jsy-func-editor>pre { flex: 1 0; min-width: min-content; }
+  jsy-func-editor>pre.dual { background-color: #ddd; border-left: 2px dashed black; }
+</style>
+<jsy-func-editor mode='dual' func='async'>
   if true != false ::
     console.log @
       'A log message'
