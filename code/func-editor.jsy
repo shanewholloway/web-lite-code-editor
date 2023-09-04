@@ -1,33 +1,32 @@
 import {CodeEditor} from './editor.jsy'
 
 
-export default FuncCodeEditorBase
 export class FuncCodeEditorBase extends CodeEditor ::
   constructor() ::
     super()
 
     this.compiler = this.createCompiler()
-    this.dyn_proto = this._bindDynProto(this)
+    this.dyn_proto = this._bindDynProto @ this, this.compiler
 
-  get dyn_fn() :: return this.dyn_proto.dyn_fn
+  createCompiler() ::
+    return new DynFuncCompiler(this.transpile)
 
-  _bindDynProto(host) ::
-    const {compiler} = host
+  _bindDynProto(host, compiler) ::
     return @{}
       compiler
-      get dyn_fn() ::
-        let fn = this._dyn_fn
-        if undefined === fn ::
-          try ::
-            const ctx = host.as_compile_ctx(host)
-            fn = compiler.compile_func @
-              this.src_code, ctx
-          catch err ::
-            fn = null
-          this._dyn_fn = fn
-        return fn
+      lazy() ::
+        let ctx = host.as_compile_ctx(host)
+        let dyn = compiler.compile_func(this.src_code, ctx)
+        Object.assign(this, dyn)
+        this.lazy = _=>this
+        return this
+
+      get dyn_fn() :: return this.lazy().fn
+      get dyn_js() :: return this.lazy().js
 
 
+  static get observedAttributes() ::
+    return super.observedAttributes.concat @# 'name', 'func', 'args'
 
   get name() :: return this.getAttribute('name') || this.default_name || ''
   set name(value) :: this.setAttribute('name', value)
@@ -38,42 +37,68 @@ export class FuncCodeEditorBase extends CodeEditor ::
   get args() :: return this.getAttribute('args') || this.default_args || ''
   set args(value) :: this.setAttribute('args', value)
 
+  get mode() :: return this.getAttribute('mode')
+  set mode(value) :: return this.setAttribute('mode', value)
+
   as_compile_ctx({name, func, args}) ::
     return @{} name, func, args
 
 
-  _highlight_src(src_code, el_code) ::
-    Prism.highlightElement(el_code)
+  get dyn_fn() :: return this.dyn?.dyn_fn
+  get dyn_js() :: return this.dyn?.dyn_js
 
   _event_from_state(state) ::
-    return @{}
+    return this.dyn = @{}
       __proto__: this.dyn_proto
       ... state
 
-FuncCodeEditorBase.prototype.default_lang = 'js'
+  refresh_code() ::
+    let mode = this.mode
+    if ! mode ::
+      this._el_dual &&= void this._el_dual.parentNode.remove()
+      return
+
+    this._el_dual ||= this._init_code_dom(mode)
+
+    let dyn = this.dyn.lazy()
+    let src = this.hasAttribute('debug') ? ''+dyn.fn : dyn.js
+
+    if null != dyn.err ::
+      src = `// ${dyn.err}\n\n${src}`
+
+    this.render_code @ 'js', src, this._el_dual, true
+
+
+export default FuncCodeEditorBase
 
 
 export class DynFuncCompiler ::
+  constructor(fn_transpile=(src=>src)) ::
+    this.transpile = fn_transpile
+
   compile_func(src_code, ctx) ::
-    const js_src = this.transpile @
-      '\n\n' + src_code
+    let res = {}
+    try ::
+      res.js = this.transpile(src_code)
+    catch err ::
+      res.err = err
+      return res
 
-    const js_compile_src =
-      this.as_func_src(js_src, ctx)
+    try ::
+      let fn_compile = new Function @
+        `return (${this.as_func_src(res.js, ctx)})`
 
-    const fn_compile = new Function @
-      `return (${js_compile_src}\n)`
+      res.fn = fn_compile()
+    catch err ::
+      res.err = err
+      return res
 
-    return fn_compile()
-
-  transpile(src_code) ::
-    return src_code
+    return res
 
   as_func_src(js_src, {func, name, args}) ::
     if ! func.match(/\bfunction\b/) ::
       const [_,pre,post] = func.match(/^([^\*]*)(\*.*)?$/)
       func = `${pre||''} function ${post||''}`
 
-    return `${func.trim()} ${name||''}(${args||''}){ ${js_src} }`
-
+    return `${func.trim()} ${name||''}(${args||''}){\n${js_src}\n}`
 

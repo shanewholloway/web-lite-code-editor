@@ -84,8 +84,8 @@ export function _init_editor_api(host, el_code, state_tip) ::
     try :: host._restore_state(prev_state)
     finally :: _undoer = save
 
-  const q_async = _create_async_queue()
-  let evt_detail = host._event_from_state @ state_tip
+  const q_async = _create_async_queue(host)
+  let evt_detail = null
 
   Object.assign @ host, @{}
     *with_selection() ::
@@ -93,9 +93,11 @@ export function _init_editor_api(host, el_code, state_tip) ::
         yield
 
     dirty() ::
-      q_async @ host.refresh
+      q_async @ host._refresh_selection
+      evt_detail = host._event_from_state(state_tip)
+      q_async @ host.refresh_code
 
-    refresh() ::
+    _refresh_selection() ::
       for const _ of host.with_selection() ::
         host.src_code = host.src_code + ''
 
@@ -110,10 +112,12 @@ export function _init_editor_api(host, el_code, state_tip) ::
       if null !== _undoer ::
         _undoer.push @ host._save_state(new_state), el
 
-      evt_detail = host._event_from_state @ new_state
+      evt_detail = host._event_from_state(state_tip)
+      q_async @ host.refresh_code
       _emit_code_event @ host, evt_detail, ':input'
 
 
+  q_async @ host.dirty
   q_async @ host._emit_code_change
   return host
 
@@ -131,11 +135,11 @@ function _state_equal(a,b, shape) ::
   return true
 
 
-const _ed_attrs = @{}
+const _ed_attrs = /* #__PURE__ */ @{}
   contentEditable: true
   spellcheck: false
 
-const _ed_style = @{}
+const _ed_style = /* #__PURE__ */ @{}
   outline: 'none'
   overflowWrap: 'break-word'
   overflowY: 'auto'

@@ -1,4 +1,5 @@
-import jsy_transpile from 'https://cdn.jsdelivr.net/npm/jsy-transpile/esm/index.mjs';
+import jsy_transpile from 'https://cdn.jsdelivr.net/npm/@jsy-lang/jsy/esm/index.js';
+export { default as jsy_transpile } from 'https://cdn.jsdelivr.net/npm/@jsy-lang/jsy/esm/index.js';
 
 function * relative_selection_ctxmgr(el) {
   const sel = el.ownerDocument.getSelection();
@@ -70,21 +71,21 @@ function from_range_relative_offset(el_root, offset) {
       // drill down into first child
       tip = tip.childNodes[0];} } }
 
-function _create_async_queue() {
-  let _x, _q=new Set();
+function _create_async_queue(self) {
+  let _x, _q=[];
   return enqueue
 
   function enqueue(fn) {
-    if (fn) {_q.add(fn);}
-    if (undefined === _x && 0 !== _q.size) {
-      _x = requestAnimationFrame(_q_step); } }
+    if (fn) {_q.push(fn);}
+    if (undefined === _x && 0 !== _q.length) {
+      _x = requestAnimationFrame(_q_step);} }
 
   async function _q_step() {
-    const q_snap = _q;
-    _q = new Set();
+    let q_snap = _q;
+    _q = [];
 
-    for (const fn of q_snap) {
-      await fn();}
+    for (let fn of q_snap) {
+      await fn.call(self);}
 
     _x = undefined;
     enqueue();} }
@@ -263,8 +264,8 @@ function _init_editor_api(host, el_code, state_tip) {
     try {host._restore_state(prev_state);}
     finally {_undoer = save;} }
 
-  const q_async = _create_async_queue();
-  let evt_detail = host._event_from_state(state_tip);
+  const q_async = _create_async_queue(host);
+  let evt_detail = null;
 
   Object.assign(host,{
     *with_selection() {
@@ -272,9 +273,11 @@ function _init_editor_api(host, el_code, state_tip) {
         yield;} }
 
   , dirty() {
-      q_async(host.refresh); }
+      q_async(host._refresh_selection);
+      evt_detail = host._event_from_state(state_tip);
+      q_async(host.refresh_code); }
 
-  , refresh() {
+  , _refresh_selection() {
       for (const _ of host.with_selection()) {
         host.src_code = host.src_code + '';} }
 
@@ -289,10 +292,12 @@ function _init_editor_api(host, el_code, state_tip) {
       if (null !== _undoer) {
         _undoer.push(host._save_state(new_state), el); }
 
-      evt_detail = host._event_from_state(new_state);
+      evt_detail = host._event_from_state(state_tip);
+      q_async(host.refresh_code);
       _emit_code_event(host, evt_detail, ':input'); } } );
 
 
+  q_async(host.dirty);
   q_async(host._emit_code_change);
   return host}
 
@@ -310,11 +315,11 @@ function _state_equal(a,b, shape) {
   return true}
 
 
-const _ed_attrs ={
+const _ed_attrs = {
   contentEditable: true
 , spellcheck: false};
 
-const _ed_style ={
+const _ed_style = {
   outline: 'none'
 , overflowWrap: 'break-word'
 , overflowY: 'auto'
@@ -331,13 +336,16 @@ function _init_code_dom(el_code, opt) {
 
 class CodeEditor extends HTMLElement {
   static with_options(opt={}) {
-    return class CodeEditor extends this {
+    return class extends this {
       _dom_connect(el, state0) {
         code_editor_dom(
           this, el, state0, opt); } } }
 
-  static define_as(key) {
-    customElements.define(key, this); }
+  static define_with(key, attrs) {
+    let klass = class extends this {};
+    Object.assign(klass.prototype, attrs);
+    customElements.define(key, klass);
+    return klass}
 
 
   connectedCallback() {
@@ -346,7 +354,7 @@ class CodeEditor extends HTMLElement {
     this.textContent = '';
     const state0 ={src_code, lang: this.lang};
 
-    const el = this._el_code = this._init_dom(this.ownerDocument);
+    const el = this._el_code = this._init_code_dom();
     this._dom_connect(el, state0);
     this.src_code = src_code;}
 
@@ -360,44 +368,36 @@ class CodeEditor extends HTMLElement {
     if (this._dom_disconnect) {
       this._dom_disconnect();} }
 
-  _init_dom(odoc) {
+  _init_code_dom(className) {
+    let odoc = this.ownerDocument;
     const el_code = odoc.createElement('code');
     const el_pre = odoc.createElement('pre');
     el_pre.appendChild(el_code);
     this.appendChild(el_pre);
+    if (className) {
+      el_pre.className = className;}
     return el_code}
 
 
-  static get observedAttributes() {
-    return ['lang'] }
-  attributeChangedCallback() {
-    this.dirty();}
-
+  static get observedAttributes() {return ['lang', 'mode']}
+  attributeChangedCallback() {this.dirty();}
   dirty() {}
-  refresh() {}
 
-  get lang() {return this.getAttribute('lang') || this.default_lang}
+  get lang() {return this.getAttribute('lang') || this.default_lang || 'js'}
   set lang(lang) {this.setAttribute('lang', lang);}
 
   get raw_src_code() {
     return this._el_code.textContent}
   set raw_src_code(src_code) {
     const {_el_code: el, lang} = this;
-    el.innerHTML = '';
-    el.textContent = src_code;
-
-    if (lang) {
-      const cls_lang = `language-${lang}`;
-      el.className = cls_lang || '';
-      el.parentNode.className = cls_lang || '';}
-
+    this.render_code(lang, src_code, el);
     this._emit_src_code(this, {src_code, lang}); }
 
   get src_code() {
     return this._el_code.textContent}
   set src_code(src_code) {
     this.raw_src_code = src_code;
-    this._highlight_src(src_code, this._el_code);}
+    this.highlight_src(src_code, this._el_code);}
 
   _save_state(state) {return state}
   _restore_state({lang, src_code}) {
@@ -407,34 +407,49 @@ class CodeEditor extends HTMLElement {
   _event_from_state(state) {
     return {... state} }
 
-  _highlight_src(src_code, el_code) {} }
+  render_code(lang, src_code, el_code, highlight) {
+    el_code.innerText = ''; // clear content
+    el_code.textContent = src_code;
+
+    if (lang) {
+      const cls_lang = `language-${lang}`;
+      el_code.classList.add(cls_lang);
+      el_code.parentNode.classList.add(cls_lang);}
+
+    if (highlight) {
+      this.highlight_src(src_code, el_code);}
+    return el_code}
+
+  highlight_src(src_code, el_code) {
+    if (globalThis.Prism) {
+      Prism.highlightElement(el_code);} } }
 
 class FuncCodeEditorBase extends CodeEditor {
   constructor() {
     super();
 
     this.compiler = this.createCompiler();
-    this.dyn_proto = this._bindDynProto(this);}
+    this.dyn_proto = this._bindDynProto(this, this.compiler); }
 
-  get dyn_fn() {return this.dyn_proto.dyn_fn}
+  createCompiler() {
+    return new DynFuncCompiler(this.transpile)}
 
-  _bindDynProto(host) {
-    const {compiler} = host;
+  _bindDynProto(host, compiler) {
     return {
       compiler
-    , get dyn_fn() {
-        let fn = this._dyn_fn;
-        if (undefined === fn) {
-          try {
-            const ctx = host.as_compile_ctx(host);
-            fn = compiler.compile_func(
-              this.src_code, ctx); }
-          catch (err) {
-            fn = null;}
-          this._dyn_fn = fn;}
-        return fn} } }
+    , lazy() {
+        let ctx = host.as_compile_ctx(host);
+        let dyn = compiler.compile_func(this.src_code, ctx);
+        Object.assign(this, dyn);
+        this.lazy = _=>this;
+        return this}
+
+    , get dyn_fn() {return this.lazy().fn}
+    , get dyn_js() {return this.lazy().js} } }
 
 
+  static get observedAttributes() {
+    return super.observedAttributes.concat(['name', 'func', 'args']) }
 
   get name() {return this.getAttribute('name') || this.default_name || ''}
   set name(value) {this.setAttribute('name', value);}
@@ -445,53 +460,73 @@ class FuncCodeEditorBase extends CodeEditor {
   get args() {return this.getAttribute('args') || this.default_args || ''}
   set args(value) {this.setAttribute('args', value);}
 
+  get mode() {return this.getAttribute('mode')}
+  set mode(value) {return this.setAttribute('mode', value)}
+
   as_compile_ctx({name, func, args}) {
     return {name, func, args} }
 
 
-  _highlight_src(src_code, el_code) {
-    Prism.highlightElement(el_code);}
+  get dyn_fn() {return this.dyn?.dyn_fn}
+  get dyn_js() {return this.dyn?.dyn_js}
 
   _event_from_state(state) {
-    return {
+    return this.dyn ={
       __proto__: this.dyn_proto
-    , ... state} } }
+    , ... state} }
 
-FuncCodeEditorBase.prototype.default_lang = 'js';
+  refresh_code() {
+    let mode = this.mode;
+    if (! mode) {
+      this._el_dual &&= void this._el_dual.parentNode.remove();
+      return}
+
+    this._el_dual ||= this._init_code_dom(mode);
+
+    let dyn = this.dyn.lazy();
+    let src = this.hasAttribute('debug') ? ''+dyn.fn : dyn.js;
+
+    if (null != dyn.err) {
+      src = `// ${dyn.err}\n\n${src}`;}
+
+    this.render_code('js', src, this._el_dual, true); } }
 
 
 class DynFuncCompiler {
+  constructor(fn_transpile=(src=>src)) {
+    this.transpile = fn_transpile;}
+
   compile_func(src_code, ctx) {
-    const js_src = this.transpile(
-      '\n\n' + src_code);
+    let res = {};
+    try {
+      res.js = this.transpile(src_code);}
+    catch (err) {
+      res.err = err;
+      return res}
 
-    const js_compile_src =
-      this.as_func_src(js_src, ctx);
+    try {
+      let fn_compile = new Function(
+  `return (${this.as_func_src(res.js, ctx)})`);
 
-    const fn_compile = new Function(
-      `return (${js_compile_src}\n)`);
+      res.fn = fn_compile();}
+    catch (err) {
+      res.err = err;
+      return res}
 
-    return fn_compile()}
-
-  transpile(src_code) {
-    return src_code}
+    return res}
 
   as_func_src(js_src, {func, name, args}) {
     if (! func.match(/\bfunction\b/)) {
       const [_,pre,post] = func.match(/^([^\*]*)(\*.*)?$/);
       func = `${pre||''} function ${post||''}`;}
 
-    return `${func.trim()} ${name||''}(${args||''}){ ${js_src} }`} }
+    return `${func.trim()} ${name||''}(${args||''}){\n${js_src}\n}`} }
 
-class DynJSYFuncCompiler extends DynFuncCompiler {
-  transpile(src_code) {
-    return jsy_transpile(src_code) } }
-class JSYFuncCodeEditor extends FuncCodeEditorBase {
-  createCompiler() {return new DynJSYFuncCompiler()} }
+const JSYFuncCodeEditor =
+  FuncCodeEditorBase.define_with(
+    'jsy-func-editor'
+  , {default_lang: 'jsy'
+      , transpile: jsy_transpile} );
 
-JSYFuncCodeEditor.prototype.default_lang = 'jsy';
-customElements.define('jsy-func-editor', JSYFuncCodeEditor);
-
-export default JSYFuncCodeEditor;
-export { DynJSYFuncCompiler, JSYFuncCodeEditor };
+export { JSYFuncCodeEditor, JSYFuncCodeEditor as default };
 //# sourceMappingURL=jsy-func-editor.mjs.map

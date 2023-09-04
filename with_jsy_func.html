@@ -13,6 +13,14 @@
       max-width: 60em;
       margin: 2em auto;
     }
+
+    jsy-func-editor {
+      display: flex;
+    }
+    jsy-func-editor>pre.dual {
+      border-left: 2px dashed black;
+      background-color: #ddd;
+    }
   </style>
 
   <link href='https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css' rel='stylesheet' />
@@ -27,11 +35,10 @@
 <h1>JSY Transpiling Function Editor
 <br/><small>built with <code>lite-code-editor</code></small></h1>
 
-<jsy-func-editor name='bingo' func='async' args='arg_a,arg_b,arg_c'>
+<jsy-func-editor mode=dual func='async'>
   const ts0 = new Date
   const obj = @{}
-    ts0, self: this,
-    arg_a, arg_b, arg_c
+    ts0, self: this
 
   console.log @ 'In edited JSY func before await', obj
 
@@ -80,15 +87,19 @@ the JSY transpiling <a href='./with_jsy_func.html'>jsy-func-editor</a>.
 
   window.showNewest = showNewest
   async function showNewest() {
-    if (dyn_evt.dyn_fn)
+    if (dyn_evt.dyn_fn) {
       try {
         console.log('%cdyn_fn() :: invoke', 'color: green')
         const res = dyn_evt.dyn_fn()
         console.log('%cdyn_fn() :: result: %o', 'color: green', res)
         console.log('%cdyn_fn() :: await result: %o', 'color: green', await res)
       } catch (err) {
-        console.warn('%cdyn_fn() :: error: %o', 'color: green', err)
+        console.warn('%cdyn_fn() :: error: %o', 'color: red', err)
       }
+    } else if (dyn_evt.err) {
+      console.warn('%cdyn_fn compile error: %o', 'color: red', dyn_evt.err)
+    }
+
   }
 </script>
 <script src='/livereload.js'></script>

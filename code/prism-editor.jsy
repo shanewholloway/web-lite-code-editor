@@ -1,9 +1,18 @@
 import {CodeEditor} from './editor.jsy'
 
-export default PrismCodeEditor
-export class PrismCodeEditor extends CodeEditor ::
-  _highlight_src(src_code, el_code) ::
-    Prism.highlightElement(el_code)
+function highlight_src(src_code, el_code) ::
+  Prism.highlightElement(el_code)
 
-customElements.define @ 'prism-code-editor', PrismCodeEditor
+function with_prism(tgt) ::
+  (tgt.prototype || tgt).highlight_src = highlight_src
+  return tgt
 
+const PrismCodeEditor =
+  CodeEditor.define_with @
+    'prism-code-editor'
+    @{} highlight_src
+
+export @{}
+  PrismCodeEditor
+  PrismCodeEditor as default
+  with_prism

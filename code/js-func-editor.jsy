@@ -1,8 +1,10 @@
-import {FuncCodeEditorBase, DynFuncCompiler} from './func-editor.jsy'
+import {FuncCodeEditorBase} from './func-editor.jsy'
 
+const JSFuncCodeEditor =
+  FuncCodeEditorBase.define_with @
+    'js-func-editor'
+    @{} default_lang: 'js'
 
-export class JSFuncCodeEditor extends FuncCodeEditorBase ::
-  createCompiler() :: return new DynFuncCompiler()
-
-customElements.define @ 'js-func-editor', JSFuncCodeEditor
-
+export @{}
+  JSFuncCodeEditor
+  JSFuncCodeEditor as default

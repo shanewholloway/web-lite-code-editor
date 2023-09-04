@@ -1,6 +1,6 @@
 import rpi_jsy from 'rollup-plugin-jsy'
 import rpi_resolve from '@rollup/plugin-node-resolve'
-import { terser as rpi_terser } from 'rollup-plugin-terser'
+import rpi_terser from '@rollup/plugin-terser'
 
 const configs = []
 export default configs
