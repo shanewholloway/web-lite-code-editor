@@ -13,8 +13,18 @@
       max-width: 60em;
       margin: 2em auto;
     }
+    main {
+      padding-bottom: 50vh;
+    }
 
     jsy-func-editor { display: flex; flex-wrap: wrap; }
+    jsy-func-editor[error]::after {
+      border: 2px dotted red;
+      padding: 0.5em;
+      content: attr(error);
+      color: red;
+      flex-basis: 100%;
+    }
     jsy-func-editor>pre { flex: 1 0; min-width: min-content; }
     jsy-func-editor>pre.dual {
       border-left: 2px dashed black;
@@ -34,7 +44,7 @@
 <h1>JSY Transpiling Function Editor
 <br/><small>built with <code>lite-code-editor</code></small></h1>
 
-<jsy-func-editor mode=dual func='async'>
+<jsy-func-editor dual func='async'>
   const ts0 = new Date
   const obj = @{}
     ts0, self: this
@@ -63,6 +73,12 @@ or on <a href='https://www.npmjs.com/package/lite-code-editor'>npmjs</a></li>.
 Also take a look at <a href='./with_func.html'>js-func-editor</a> and
 the JSY transpiling <a href='./with_jsy_func.html'>jsy-func-editor</a>.
 </p>
+
+<h2>Options: dual, debug, name, func, args</h2>
+<code class='language-html'>&lt;jsy-func-editor dual debug name='fn_demo' func='async *' args='arg_first, ...args'&gt;</code>
+<jsy-func-editor dual debug name='fn_demo' func='async *' args='arg_first, ...args'>
+  console.log @ 'All options!'
+</jsy-func-editor>
 
 </main>
 
@@ -100,5 +116,7 @@ the JSY transpiling <a href='./with_jsy_func.html'>jsy-func-editor</a>.
     }
 
   }
+
+  Promise.resolve().then(() => Prism.highlightAll())
 </script>
 <script src='/livereload.js'></script>

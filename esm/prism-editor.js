@@ -316,11 +316,14 @@ const _ed_attrs = {
   contentEditable: true
 , spellcheck: false};
 
+const _ed_style = {
+  outline: 'none'};
+
 function _init_code_dom(el_code, opt) {
   for (let [k,v] of Object.entries({... _ed_attrs, ... opt.attrs}) ) {
     el_code.setAttribute(k,v);}
 
-  Object.assign(el_code.style, opt.style); }
+  Object.assign(el_code.style, _ed_style, opt.style); }
 
 class CodeEditor extends HTMLElement {
   static with_options(opt={}) {

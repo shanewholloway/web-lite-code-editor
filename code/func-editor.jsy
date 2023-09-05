@@ -37,8 +37,12 @@ export class FuncCodeEditorBase extends CodeEditor ::
   get args() :: return this.getAttribute('args') || this.default_args || ''
   set args(value) :: this.setAttribute('args', value)
 
-  get mode() :: return this.getAttribute('mode')
-  set mode(value) :: return this.setAttribute('mode', value)
+  get dual() :: return this.hasAttribute('dual')
+  set dual(value) :: return value ? this.setAttribute('dual', '') : this.removeAttribute('dual')
+
+  get debug() :: return this.hasAttribute('debug')
+  set debug(value) :: return value ? this.setAttribute('debug', '') : this.removeAttribute('debug')
+
 
   as_compile_ctx({name, func, args}) ::
     return @{} name, func, args
@@ -53,19 +57,18 @@ export class FuncCodeEditorBase extends CodeEditor ::
       ... state
 
   refresh_code() ::
-    let mode = this.mode
-    if ! mode ::
-      this._el_dual &&= void this._el_dual.parentNode.remove()
+    let dyn = this.dyn.lazy()
+    if dyn.err ::
+      this.setAttribute('error', dyn.err)
+    else this.removeAttribute('error')
+
+    if ! this.dual ::
+      this._el_dual = this._el_dual?.parentNode.remove()
       return
 
-    this._el_dual ||= this._init_code_dom(mode)
+    this._el_dual ||= this._init_code_dom('dual')
 
-    let dyn = this.dyn.lazy()
-    let src = this.hasAttribute('debug') ? ''+dyn.fn : dyn.js
-
-    if null != dyn.err ::
-      src = `// ${dyn.err}\n\n${src}`
-
+    let src = this.debug ? ''+dyn.fn : dyn.js
     this.render_code @ 'js', src, this._el_dual, true
 
 
@@ -97,8 +100,8 @@ export class DynFuncCompiler ::
 
   as_func_src(js_src, {func, name, args}) ::
     if ! func.match(/\bfunction\b/) ::
-      const [_,pre,post] = func.match(/^([^\*]*)(\*.*)?$/)
+      let [_,pre,post] = func.match(/^([^\*]*?)\s*(\*.*?)?\s*$/)
       func = `${pre||''} function ${post||''}`
 
-    return `${func.trim()} ${name||''}(${args||''}){\n${js_src}\n}`
+    return `${func.trim()} ${name||''}(${args||''}) {\n${js_src}}`
 
